@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Pragma" content="no-store">
+    <meta http-equiv="Cache-Control" content="no-store">
+    <meta http-equiv="Expires" content="0">
+
+    <title>ツール一覧</title>
+</head>
+
+<body>
+  <table border="1" width="720" cellspacing="0" cellpadding="5" bordercolor="#FFFFFF">
+
+    <tr>
+    <th bgcolor="#DDEEFF" width="200px"><font color="#555555">処理</font></th>
+    <th bgcolor="#DDEEFF" width="500px"><font color="#555555">パラメータ</font></th>
+    </tr>
+
+    <form action="" method="post">
+      <tr>
+      <td bgcolor="#DDEEFF" align="centger" valign="middle">
+        <input type="submit" name="process" value="PDF回転" style="WIDTH: 180px; HEIGHT: 50px">
+      </td>
+      <td bgcolor="#DDEEFF" align="centger" valign="middle">
+        <label><input type="radio" name="p1" value="90" checked>90度</label>
+        <label><input type="radio" name="p1" value="180">180度</label>
+        <label><input type="radio" name="p1" value="280">-90度</label>
+      </td>
+      </tr>
+    </form>
+    
+    <form action="" method="post">
+      <tr>
+      <td bgcolor="#DDEEFF" align="centger" valign="middle">
+        <input type="submit" name="process" value="PDFテキスト化" style="WIDTH: 180px; HEIGHT: 50px">
+      </td>
+      <td bgcolor="#DDEEFF" align="centger" valign="middle">
+        <label><input type="radio" name="p1" value="横書き" checked>横書き</label>
+        <label><input type="radio" name="p1" value="縦書き">縦書き</label>
+      </td>
+      </tr>
+    </form>
+
+    <form action="" method="post">
+      <tr>
+      <td bgcolor="#DDEEFF" align="centger" valign="middle">
+        <input type="submit" name="process" value="NumberPlace" style="WIDTH: 180px; HEIGHT: 50px">
+      </td>
+      <td bgcolor="#DDEEFF" align="centger" valign="middle">
+      </td>
+      </tr>
+    </form>
+
+
+
+  </table>
+</body>
+</html>

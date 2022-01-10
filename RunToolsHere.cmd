@@ -1,0 +1,1 @@
+"C:\opt\anaconda3\python.exe" application.py

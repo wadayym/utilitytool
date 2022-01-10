@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Pragma" content="no-store">
+    <meta http-equiv="Cache-Control" content="no-store">
+    <meta http-equiv="Expires" content="0">
+
+    <title>PDF回転結果</title>
+    <style>
+      iframe[src$=".pdf"]{
+          width:100%;
+          height:97vh;
+      }
+      </style>
+</head>
+
+<body>
+  {% if result_url %}
+  <iframe src="{{ result_url }}"></iframe>
+  {% endif %}
+</body>
+</html>

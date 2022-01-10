@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Pragma" content="no-store">
+    <meta http-equiv="Cache-Control" content="no-store">
+    <meta http-equiv="Expires" content="0">
+
+    <title>処理結果テキスト</title>
+</head>
+
+<body>
+  {% if result_url %}
+  <iframe src="{{ result_url }}"  TYPE="text/plain" WIDTH="100%" scrolling="no" onload="resizeIframe(this)"></iframe>
+  {% endif %}
+  <script>
+    function resizeIframe(obj) {
+      var frmdoc = obj.contentDocument || obj.contentWindow.document;
+      frmdoc.body.style.fontSize = '16px';
+      frmdoc.body.style.fontFamily = '"MS Gothic",sans-serif';
+      frmdoc.body.style.lineHeight = '1.75';
+      frmdoc.body.style.letterSpacing = '1.5px';
+      frmdoc.body.style.fontWeight = 'normal';
+      frmdoc.body.style.color = 'rgb( 95%, 90%, 90% )';
+      frmdoc.body.style.backgroundColor = 'rgb( 5%, 10%, 10% )';
+      obj.style.height = obj.contentWindow.document.documentElement.scrollHeight + 'px';
+    }
+  </script>
+</body>
+</html>

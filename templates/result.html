@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Pragma" content="no-store">
+    <meta http-equiv="Cache-Control" content="no-store">
+    <meta http-equiv="Expires" content="0">
+
+    <title>画像処理結果</title>
+</head>
+
+<body>
+
+  <div class="container">
+    <div class="row">
+      {% if result_url %}
+      <p><img src="{{ result_url }}" height="800"></p>
+      {% endif %}
+    </div>
+  </div>
+
+</body>
+</html>

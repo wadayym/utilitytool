@@ -1,0 +1,6 @@
+flask_dropzone
+Werkzeug
+redis
+numpy
+PyPDF2
+pdfminer.six
