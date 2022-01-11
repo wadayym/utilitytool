@@ -4,11 +4,11 @@ import time
 import uuid
 import datetime
 import glob
-import numpy as np
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory
 from flask_dropzone import Dropzone
 from werkzeug.utils import secure_filename
 from PdfProcessing import pdf_roll, pdf2text, pdfvertical2text
+from NumberPlace import NumberPlace
 
 app = Flask(__name__)
 
@@ -25,94 +25,9 @@ app.config.update(
 
 dropzone = Dropzone(app)
 
-class NumberPlace:
-    def __init__(self):
-        self.number_table = np.zeros((9, 9), dtype=np.int)
-
-    def set(self, i, j, value): 
-        self.number_table[i][j] = value
-    
-    def get(self): 
-        return self.number_table, self.input_table
-    
-    def check_all(self):
-        self.input_table = np.copy(self.number_table) 
-        print(self.number_table) 
-        result = self.check(0)
-        return result
-
-    def check(self, n):
-        if n >= 9 * 9:
-            return True
-        i = n // 9
-        j = n % 9
-        l = self.number_table[i][j]
-        #print(i, j, l)
-
-        if l != 0:
-            self.number_table[i][j] = 0
-            if self.check3(i, j, l):
-                self.number_table[i][j] = l
-                return self.check(n + 1)
-            self.number_table[i][j] = l
-            return False
-        for k in range(1,10):
-            #print(i, j, k)
-            if self.check3(i, j, k):
-                self.number_table[i][j] = k
-                if self.check(n + 1):
-                    return True
-                else:
-                    self.number_table[i][j] = 0
-        return False
-
-    def check3(self, i, j, k):
-        if self.check_box(i, j, k):
-            if self.check_row(i, j, k):
-                if self.check_column(i, j, k):
-                    return True
-                else:
-                    return False
-        return False
-
-    def check_box(self, i, j, k): 
-        box_row = i // 3
-        box_column = j // 3
-        rs = box_row * 3
-        cs = box_column * 3
-        box_list = self.number_table[rs:rs + 3, cs:cs + 3]
-        if k in box_list:
-            return False
-        else:
-            return True
-        
-    def check_row(self, i, j, k): 
-        row_list = self.number_table[i,:]
-        if k in row_list:
-            return False
-        else:
-            return True
-        
-    def check_column(self, i, j, k): 
-        column_list = self.number_table[:,j]
-        if k in column_list:
-            return False
-        else:
-            return True
-
 class ProcessSettings:
     def __init__(self):
         self.param_dict = {}
-        self.lineCounter = 0
-
-    def clearLineCounter(self):
-        self.lineCounter = 0
-
-    def addLineCounter(self):
-        self.lineCounter += 1
-        if self.lineCounter == 10000:
-            self.lineCounter = 0
-        return self.lineCounter
 
     def set(self, request):
         self.param_dict['process'] = request.form['process']
@@ -169,22 +84,6 @@ class ProcessSettings:
     def get_result_filename(self):
         dt_now = datetime.datetime.now()
         return os.path.join(app.config['UPLOADED_PATH'], dt_now.strftime('%Y%m%d_%H%M%S_%f'))
-        
-    def printDictPretty(self, d, indent=0, file=sys.stdout):
-        indent_word = '    '
-        if isinstance(d, dict):
-            for key, value in d.items():
-                if isinstance(value, (dict, list)):
-                    print("{:4d} ".format(self.addLineCounter()) + indent_word * indent + str(key), file=file)
-                    self.printDictPretty(value, indent+1, file)
-                else:
-                    print("{:4d} ".format(self.addLineCounter()) + indent_word * indent + str(key) + ':' +  str(value), file=file)
-        else:
-            for value in d:
-                if isinstance(value, (dict, list)):
-                    self.printDictPretty(value, indent, file)
-                else:
-                    print("{:4d} ".format(self.addLineCounter()) + indent_word * indent + str(value), file=file)    
 
 p_settings = ProcessSettings()
 
@@ -193,7 +92,6 @@ for i in range(9):
     for j in range(9):
         PlaceName[i][j] = str(i * 10 + j)
 bComplete = False
-
 
 @app.route('/', methods=['POST', 'GET'])
 def index():
@@ -246,7 +144,6 @@ def result():
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOADED_PATH'], filename)
-
 
 if __name__ == '__main__':
     for p in glob.glob(app.config['UPLOADED_PATH']+'/**', recursive=True):
