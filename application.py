@@ -101,7 +101,12 @@ def index():
         p_settings.set(request)
         if p_settings.get_process_name() =='NumberPlace':
             return redirect('/numberplace')
+
+        if p_settings.get_process_name() == "カメラ表示":
+            return render_template('camera.html')
+
         return redirect('/upload') 
+        
     return render_template('index.html')
 
 @app.route('/numberplace', methods=['POST', 'GET'])
