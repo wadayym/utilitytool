@@ -35,6 +35,14 @@
 	  navigator.mediaDevices.getUserMedia(constraints).then((stream) => {
 		player.srcObject = stream;
 	  });
+		const media = navigator.mediaDevices.getUserMedia(constraints);
+		media.then(successCallback).catch(errorCallback);
+		function successCallback(stream) {
+			video.srcObject = stream;
+		};
+		function errorCallback(err) {
+			alert(err);
+		};
 	</script>
 
 </body>
