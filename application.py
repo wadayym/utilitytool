@@ -4,12 +4,17 @@ import time
 import uuid
 import datetime
 import glob
+import base64
+from PIL import Image
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory
 from flask_dropzone import Dropzone
 from werkzeug.utils import secure_filename
+from pathlib import Path
+from io import BytesIO
 from PdfProcessing import pdf_roll, pdf2text, pdfvertical2text
 from NumberPlace import NumberPlace
 
+print(sys.version)
 app = Flask(__name__)
 
 app.config.update(
@@ -72,6 +77,14 @@ class ProcessSettings:
                 pdf2text(self.param_dict['file_name'], filename_result)
             if self.param_dict['p1'] == "縦書き":
                 pdfvertical2text(self.param_dict['file_name'], filename_result)
+        
+        elif self.param_dict['process'] == "カメラ表示":
+            filename_result += '.png'           
+            base64_png = request.form['image']
+            print(type(base64_png))
+            code = base64.b64decode(base64_png.split(',')[1])  # remove header 
+            image_decoded = Image.open(BytesIO(code))
+            image_decoded.save(filename_result)
 
         current_time = time.perf_counter()
         print(self.param_dict['process']+" processing time = {:.3f}sec".format(current_time - start_time))
@@ -103,7 +116,7 @@ def index():
             return redirect('/numberplace')
 
         if p_settings.get_process_name() == "カメラ表示":
-            return render_template('camera.html')
+            return redirect('/camera')
 
         return redirect('/upload') 
         
@@ -149,6 +162,13 @@ def result():
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOADED_PATH'], filename)
+
+@app.route("/camera", methods=['POST', 'GET'])
+def capture():
+    if request.method == 'POST':
+        result_file_name = p_settings.process()
+        return render_template('result.html', result_url = result_file_name)
+    return render_template('camera.html')
 
 if __name__ == '__main__':
     for p in glob.glob(app.config['UPLOADED_PATH']+'/**', recursive=True):

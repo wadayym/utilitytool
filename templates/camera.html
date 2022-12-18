@@ -10,11 +10,11 @@
 </head>
 
 <body>
-
 	<video id="player" controls autoplay></video>
 	<canvas id="canvas" width="640" height="480"></canvas>
 	<br>
 	<button id="capture">Capture</button>
+	<div id="d1"></div>
 	
 	<script>
 		var constraints = {
@@ -34,10 +34,24 @@
 		const canvas = document.getElementById('canvas');
 		const context = canvas.getContext('2d');
 		const captureButton = document.getElementById('capture');
-
+		
+		var form = document.createElement('form');
+		var request = document.createElement('input');
+	
+		form.method = 'POST';
+		form.action = '/camera';
+	
+		request.type = 'hidden'; //入力フォームが表示されないように
+		request.name = 'image';
+	
 		captureButton.addEventListener('click', () => {
 			// Draw the video frame to the canvas.
 			context.drawImage(video, 0, 0, canvas.width, canvas.height);
+			const base64_png = canvas.toDataURL("image/png");
+			request.value = base64_png;
+			form.appendChild(request);
+			document.body.appendChild(form);
+			form.submit();
 		});
 
 		const media = navigator.mediaDevices.getUserMedia(constraints);
