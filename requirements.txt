@@ -3,4 +3,5 @@ Werkzeug
 redis
 numpy
 PyPDF2
+Pillow
 pdfminer.six

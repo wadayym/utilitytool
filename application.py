@@ -42,9 +42,20 @@ class ProcessSettings:
             self.param_dict['p1'] = request.form['p1']
         elif self.param_dict['process'] == "NumberPlace":
             pass
+        elif self.param_dict['process'] == "カメラ表示":
+            pass
     
     def get_process_name(self):
         return self.param_dict['process'] 
+
+    def save_capture_image(self):
+        filename = self.get_work_filename() + '.png'
+        self.param_dict['file_name'] = filename
+        base64_png = request.form['image']
+        print(type(base64_png))
+        code = base64.b64decode(base64_png.split(',')[1])  # remove header 
+        image_decoded = Image.open(BytesIO(code))
+        image_decoded.save(filename)
 
     def upload(self, request):
         start_time = time.perf_counter()
@@ -79,12 +90,11 @@ class ProcessSettings:
                 pdfvertical2text(self.param_dict['file_name'], filename_result)
         
         elif self.param_dict['process'] == "カメラ表示":
-            filename_result += '.png'           
-            base64_png = request.form['image']
-            print(type(base64_png))
-            code = base64.b64decode(base64_png.split(',')[1])  # remove header 
-            image_decoded = Image.open(BytesIO(code))
-            image_decoded.save(filename_result)
+            filename_result += '.png'
+            # s_img = Image.open(self.param_dict['file_name'])
+            # ここで処理する
+            s_img = Image.open(os.path.join("./images", "np1.png"))
+            s_img.save(filename_result)
 
         current_time = time.perf_counter()
         print(self.param_dict['process']+" processing time = {:.3f}sec".format(current_time - start_time))
@@ -116,11 +126,17 @@ def index():
             return redirect('/numberplace')
 
         if p_settings.get_process_name() == "カメラ表示":
-            return redirect('/camera')
+            return render_template('camera.html')
 
         return redirect('/upload') 
         
     return render_template('index.html')
+
+@app.route('/upload', methods=['POST', 'GET'])
+def upload():
+    if request.method == 'POST':
+        p_settings.upload(request)
+    return render_template('upload.html', pocess_name = p_settings.get_process_name())
 
 @app.route('/numberplace', methods=['POST', 'GET'])
 def numberplace():
@@ -141,12 +157,6 @@ def send():
     else:
         return redirect(url_for('numberplace'))
 
-@app.route('/upload', methods=['POST', 'GET'])
-def upload():
-    if request.method == 'POST':
-        p_settings.upload(request)
-    return render_template('upload.html', pocess_name = p_settings.get_process_name())
-
 @app.route('/result')
 def result():
     result_file_name = p_settings.process()
@@ -166,8 +176,8 @@ def uploaded_file(filename):
 @app.route("/camera", methods=['POST', 'GET'])
 def capture():
     if request.method == 'POST':
-        result_file_name = p_settings.process()
-        return render_template('result.html', result_url = result_file_name)
+        p_settings.save_capture_image()
+        return redirect('/result')
     return render_template('camera.html')
 
 if __name__ == '__main__':
