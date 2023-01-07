@@ -13,7 +13,7 @@ from pathlib import Path
 from io import BytesIO
 from PdfProcessing import pdf_roll, pdf2text, pdfvertical2text
 from NumberPlace import NumberPlace
-from OCRProcessing import get_corner, get_feature
+from OCRProcessing import find_cross, get_corner, get_feature
 
 print(sys.version)
 app = Flask(__name__)
@@ -53,7 +53,7 @@ class ProcessSettings:
         filename = self.get_work_filename() + '.png'
         self.param_dict['file_name'] = filename
         base64_png = request.form['image']
-        print(type(base64_png))
+        #print(type(base64_png))
         code = base64.b64decode(base64_png.split(',')[1])  # remove header 
         image_decoded = Image.open(BytesIO(code))
         image_decoded.save(filename)
@@ -94,7 +94,7 @@ class ProcessSettings:
             filename_result += '.png'
             # s_img = Image.open(self.param_dict['file_name'])
             # ここで処理する
-            get_corner(os.path.join("./images", "np1.png"),filename_result)
+            find_cross(os.path.join("./images", "np1.png"),filename_result)
             #s_img = Image.open(os.path.join("./images", "np1.png"))
             #s_img.save(filename_result)
 
@@ -185,6 +185,6 @@ def capture():
 if __name__ == '__main__':
     for p in glob.glob(app.config['UPLOADED_PATH']+'/**', recursive=True):
         if os.path.isfile(p):
-            os.remove(p)
-            print('removed : '+p)
+            #os.remove(p)
+            print('not removed : '+p)
     app.run(debug=True)    
