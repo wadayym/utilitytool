@@ -13,7 +13,7 @@ from pathlib import Path
 from io import BytesIO
 from PdfProcessing import pdf_roll, pdf2text, pdfvertical2text
 from NumberPlace import NumberPlace
-from OCRProcessing import find_cross, get_corner, get_feature
+from OCRProcessing import find_square, find_cross, get_corner, get_feature
 
 print(sys.version)
 app = Flask(__name__)
@@ -94,7 +94,7 @@ class ProcessSettings:
             filename_result += '.png'
             # s_img = Image.open(self.param_dict['file_name'])
             # ここで処理する
-            find_cross(os.path.join("./images", "np1.png"),filename_result)
+            find_square(os.path.join("./images", "np1.png"),filename_result)
             #s_img = Image.open(os.path.join("./images", "np1.png"))
             #s_img.save(filename_result)
 
