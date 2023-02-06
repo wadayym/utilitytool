@@ -3,6 +3,11 @@ import cv2
 import numpy as np
 import math
 from statistics import mean
+from PIL import Image, ImageSequence
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 
 # ます目検出
 def find_square(s_file, r_file):
@@ -25,23 +30,22 @@ def find_square(s_file, r_file):
         if theta < 10:
             cv2.line(hor,(x1,y1),(x2,y2),(255,255,255))
     # 縦線だけの画像　で垂直方向の積算プロファイルを作成
-    ver_sum = np.sum(ver, axis=0)
+    ver_blur = cv2.GaussianBlur(ver,(5,5),0)
+    ver_sum = np.sum(ver_blur, axis=0)
     # 横線だけの画像　で水平方向の積算プロファイルを作成
-    hor_sum = np.sum(hor, axis=1)
+    hor_blur = cv2.GaussianBlur(hor,(5,5),0)
+    hor_sum = np.sum(hor_blur, axis=1)
     # それぞれの自己相関で周期を求める
-    ver_sum = ver_sum - ver_sum.mean()
-    result = np.correlate(ver_sum, ver_sum, mode='full')
-    result = result[result.size//2:]
-    ver_cycle = np.argmax(result[int(sq_size/2):sq_size])+int(sq_size/2)
-    r_img = np.zeros((sq_size,sq_size), dtype = np.uint8)
-    result = np.int16(result/np.max(result)*sq_size)
-    for i in range(sq_size):
-        cv2.circle(r_img, (i,result[i]), 2, (255,255,255), thickness=-1)
+    #ver_sum = ver_sum - ver_sum.mean()
+    v_acr = np.correlate(ver_sum, ver_sum, mode='full')
+    v_acr = v_acr[v_acr.size//2:]
+    ver_cycle = np.argmax(v_acr[int(sq_size/2):sq_size])+int(sq_size/2)
   
-    hor_sum = hor_sum - hor_sum.mean()
-    result = np.correlate(hor_sum, hor_sum, mode='full')
-    result = result[result.size//2:]
-    hor_cycle = np.argmax(result[int(sq_size/2):sq_size])+int(sq_size/2)
+    #hor_sum = hor_sum - hor_sum.mean()
+    h_acr = np.correlate(hor_sum, hor_sum, mode='full')
+    h_acr = h_acr[h_acr.size//2:]
+    hor_cycle = np.argmax(h_acr[int(sq_size/2):sq_size])+int(sq_size/2)
+ 
     cycle = mean([ver_cycle,hor_cycle])
     print("cycle",ver_cycle,hor_cycle,cycle,sq_size)
     # その周期の平均で9x9のます目画像を作成
@@ -57,18 +61,19 @@ def find_square(s_file, r_file):
         cv2.line(grid,(x1,y1),(x2,y2),(255,255,255))
         cv2.line(grid,(y1,x1),(y2,x2),(255,255,255))
     # 少しぼかす。
-    grid_blur = cv2.blur(grid, (3, 3))
-    imgs = cv2.hconcat([grid, grid_blur])
+    grid_blur = cv2.GaussianBlur(grid,(5,5),0)
     # ます目画像の積算プロファイルを作成
     ver_sum_grid = np.sum(grid_blur, axis=0)
     hor_sum_grid = np.sum(grid_blur, axis=1)
     # それぞれの積算プロファイルで1次元のパターンマッチングを行う。
-    ver_sum = ver_sum - ver_sum.mean()
-    ver_sum_grid = ver_sum_grid - ver_sum_grid.mean()
-    hor_sum = hor_sum - hor_sum.mean()
-    hor_sum_grid = hor_sum_grid - hor_sum_grid.mean()
-    ver_point = np.argmax(np.correlate(ver_sum, ver_sum_grid))+margin
-    hor_point = np.argmax(np.correlate(hor_sum, hor_sum_grid))+margin
+    #ver_sum = ver_sum - ver_sum.mean()
+    #ver_sum_grid = ver_sum_grid - ver_sum_grid.mean()
+    #hor_sum = hor_sum - hor_sum.mean()
+    #hor_sum_grid = hor_sum_grid - hor_sum_grid.mean()
+    v_crr = np.correlate(ver_sum, ver_sum_grid)
+    h_crr = np.correlate(hor_sum, hor_sum_grid)
+    hor_point = np.argmax(v_crr)+margin # 縦方向の積算プロファイルのずれ量が水平方向のスタート位置
+    ver_point = np.argmax(h_crr)+margin
     print('point:', ver_point, hor_point)
     # ます目のおおよその位置を確定する。
     # ます目を1個づつ（計9x9回）、それを含む30%広いエリアで1ます目をぼかした画像とパターンマッチングを行う。
@@ -82,27 +87,34 @@ def find_square(s_file, r_file):
     sq_tops = np.zeros((9,9), dtype = int) 
     sq_lefts = np.zeros((9,9), dtype = int)  
     for y in range(9):
-        top = max(min(int(ver_point-sq_size*0.3+0.5),h-sq_size),0)
+        top = max(min(int(ver_point+sq_size*y-sq_size*0.3+0.5),int(h-sq_size*1.6)),0)
         for x in range(9):
-            left = max(min(int(hor_point-sq_size*0.3+0.5),w-sq_size),0)
-            target_img = gray[top:top+sq_size,left:left+sq_size]
+            left = max(min(int(hor_point+sq_size*x-sq_size*0.3+0.5),int(w-sq_size*1.6)),0)
+            target_img = gray[top:top+int(sq_size*1.6),left:left+int(sq_size*1.6)]
             result = cv2.matchTemplate(target_img, square_blur, cv2.TM_CCOEFF_NORMED)
             minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(result)
+            print('top:',top,'  left:',left)
             sq_tops[y,x]=maxLoc[1]+top
             sq_lefts[y,x]=maxLoc[0]+left
     colors = [(0,0,255),(0,255,0),(255,0,0)]
     squares = np.copy(img)
     for y in range(9):
         for x in range(9):
+            x1 = sq_lefts[y,x] + margin
+            y1 = sq_tops[y,x] + margin
+            x2 = x1 + sq_size
+            y2 = y1 + sq_size
             cv2.rectangle(squares,(x1,y1),(x2,y2),colors[(x+y)%3])
     # 9x9個のます目を作成し、その中の数字をOCRで読み取る。
 
     file, ext = os.path.splitext(r_file)
+    save_graph(file+'_acr'+ext, v_acr, h_acr)
+    save_graph(file+'_crr'+ext, v_crr, h_crr)
+    save_graph(file+'_vsum'+ext, ver_sum, ver_sum_grid)
+    save_graph(file+'_hsum'+ext, hor_sum, hor_sum_grid)
     cv2.imwrite(file+'_cross'+ext, edges)
-    cv2.imwrite(file+'_ver'+ext, ver)
-    cv2.imwrite(file+'_hor'+ext, hor)
+    cv2.imwrite(file+'_vh'+ext,cv2.vconcat([ver, hor]))
     cv2.imwrite(file+'_grid_blur'+ext, grid_blur)
-    cv2.imwrite(file+'_r_img'+ext, r_img)
     cv2.imwrite(file+'_squares'+ext, squares)
     cv2.imwrite(r_file, gray)
 
@@ -212,3 +224,32 @@ def get_feature(s_file, r_file):
         cv2.circle(img,(x,y),5,[0, 0, 255],-1)
 
     cv2.imwrite(r_file, img)
+
+
+ 
+def save_graph(filename_save, x_list, y_list):
+    fig = plt.figure(figsize=(8, 6), dpi=300)
+ 
+    mpl.rcParams['axes.xmargin'] = 0
+    mpl.rcParams['axes.ymargin'] = 0
+    i_list = list(range(len(x_list)))
+
+    fig1 = fig.add_subplot(1, 2, 1)
+    fig1.plot(i_list, x_list, color = '#008000', linestyle = "-")
+    #fig1.set_ylim(x_ave - 15, x_ave + 15)
+    plt.title("x_list")
+    #fig1.tick_params(labelsize=20)
+
+    i_list = list(range(len(y_list)))
+    fig2 = fig.add_subplot(1, 2, 2)
+    fig2.plot(i_list, y_list, color = '#000080', linestyle = "-")
+    #fig2.set_ylim(y_ave - 15, y_ave + 15)
+    plt.title("y_list")
+    #fig2.tick_params(labelsize=20)
+ 
+    plt.rcParams["font.size"] = 11
+    plt.tight_layout()
+ 
+    plt.show()
+    plt.savefig(filename_save)
+    return
