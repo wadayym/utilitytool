@@ -36,40 +36,45 @@ def find_square(s_file, r_file):
     hor_blur = cv2.GaussianBlur(hor,(5,5),0)
     hor_sum = np.sum(hor_blur, axis=1)
     # それぞれの自己相関で周期を求める
-    #ver_sum = ver_sum - ver_sum.mean()
+    ver_sum = ver_sum - ver_sum.mean()
     v_acr = np.correlate(ver_sum, ver_sum, mode='full')
     v_acr = v_acr[v_acr.size//2:]
-    ver_cycle = np.argmax(v_acr[int(sq_size/2):sq_size])+int(sq_size/2)
+    sq_w = np.argmax(v_acr[int(sq_size/2):sq_size])+int(sq_size/2)
   
-    #hor_sum = hor_sum - hor_sum.mean()
+    hor_sum = hor_sum - hor_sum.mean()
     h_acr = np.correlate(hor_sum, hor_sum, mode='full')
     h_acr = h_acr[h_acr.size//2:]
-    hor_cycle = np.argmax(h_acr[int(sq_size/2):sq_size])+int(sq_size/2)
+    sq_h = np.argmax(h_acr[int(sq_size/2):sq_size])+int(sq_size/2)
  
-    cycle = mean([ver_cycle,hor_cycle])
-    print("cycle",ver_cycle,hor_cycle,cycle,sq_size)
+    #cycle = mean([ver_cycle,hor_cycle])
+    print("size",sq_h,sq_w,sq_size)
     # その周期の平均で9x9のます目画像を作成
-    sq_size = cycle
-    grid_size = sq_size*9
+    #sq_size = cycle
+    grid_size_w = sq_w*9
+    grid_size_h = sq_h*9
     margin = 3
-    grid = np.zeros((grid_size+margin*2,grid_size+margin*2), dtype = np.uint8)    
+    grid = np.zeros((grid_size_h+margin*2,grid_size_w+margin*2), dtype = np.uint8)    
     for i in range(10):
-        x1 = int(margin + i*sq_size)
+        x1 = int(margin + i*sq_w)
         y1 = int(margin)
         x2 = x1
-        y2 = int(y1 + 9*sq_size)
+        y2 = int(y1 + 9*sq_h)
         cv2.line(grid,(x1,y1),(x2,y2),(255,255,255))
-        cv2.line(grid,(y1,x1),(y2,x2),(255,255,255))
+        x1 = int(margin)
+        y1 = int(margin + i*sq_h)
+        x2 = int(x1 + 9*sq_w)
+        y2 = y1
+        cv2.line(grid,(x1,y1),(x2,y2),(255,255,255))
     # 少しぼかす。
     grid_blur = cv2.GaussianBlur(grid,(5,5),0)
     # ます目画像の積算プロファイルを作成
     ver_sum_grid = np.sum(grid_blur, axis=0)
     hor_sum_grid = np.sum(grid_blur, axis=1)
     # それぞれの積算プロファイルで1次元のパターンマッチングを行う。
-    #ver_sum = ver_sum - ver_sum.mean()
-    #ver_sum_grid = ver_sum_grid - ver_sum_grid.mean()
-    #hor_sum = hor_sum - hor_sum.mean()
-    #hor_sum_grid = hor_sum_grid - hor_sum_grid.mean()
+    ver_sum = ver_sum - ver_sum.mean()
+    ver_sum_grid = ver_sum_grid - ver_sum_grid.mean()
+    hor_sum = hor_sum - hor_sum.mean()
+    hor_sum_grid = hor_sum_grid - hor_sum_grid.mean()
     v_crr = np.correlate(ver_sum, ver_sum_grid)
     h_crr = np.correlate(hor_sum, hor_sum_grid)
     hor_point = np.argmax(v_crr)+margin # 縦方向の積算プロファイルのずれ量が水平方向のスタート位置
@@ -77,20 +82,20 @@ def find_square(s_file, r_file):
     print('point:', ver_point, hor_point)
     # ます目のおおよその位置を確定する。
     # ます目を1個づつ（計9x9回）、それを含む30%広いエリアで1ます目をぼかした画像とパターンマッチングを行う。
-    square = np.zeros((sq_size+margin*2,sq_size+margin*2), dtype = np.uint8) 
+    square = np.zeros((sq_h+margin*2,sq_w+margin*2), dtype = np.uint8) 
     x1 = margin
     y1 = margin
-    x2 = x1+sq_size
-    y2 = y1+sq_size
+    x2 = x1+sq_w
+    y2 = y1+sq_h
     cv2.rectangle(square,(x1,y1),(x2,y2),(255,255,255))
-    square_blur = cv2.blur(square, (3, 3))
+    square_blur = cv2.GaussianBlur(square, (5, 5),0)
     sq_tops = np.zeros((9,9), dtype = int) 
     sq_lefts = np.zeros((9,9), dtype = int)  
     for y in range(9):
-        top = max(min(int(ver_point+sq_size*y-sq_size*0.3+0.5),int(h-sq_size*1.6)),0)
+        top = max(min(int(ver_point+sq_h*y-sq_h*0.3+0.5),int(h-sq_h*1.6)),0)
         for x in range(9):
-            left = max(min(int(hor_point+sq_size*x-sq_size*0.3+0.5),int(w-sq_size*1.6)),0)
-            target_img = gray[top:top+int(sq_size*1.6),left:left+int(sq_size*1.6)]
+            left = max(min(int(hor_point+sq_w*x-sq_w*0.3+0.5),int(w-sq_w*1.6)),0)
+            target_img = gray[top:top+int(sq_h*1.6),left:left+int(sq_w*1.6)]
             result = cv2.matchTemplate(target_img, square_blur, cv2.TM_CCOEFF_NORMED)
             minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(result)
             print('top:',top,'  left:',left)
@@ -102,8 +107,8 @@ def find_square(s_file, r_file):
         for x in range(9):
             x1 = sq_lefts[y,x] + margin
             y1 = sq_tops[y,x] + margin
-            x2 = x1 + sq_size
-            y2 = y1 + sq_size
+            x2 = x1 + sq_w
+            y2 = y1 + sq_h
             cv2.rectangle(squares,(x1,y1),(x2,y2),colors[(x+y)%3])
     # 9x9個のます目を作成し、その中の数字をOCRで読み取る。
 
