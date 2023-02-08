@@ -9,71 +9,75 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
+#縦横の周期を求める
+def find_square_height_width(image, lines, is_height):
+    line_image = np.zeros_like(image)
+    for line in lines:
+        x1,y1,x2,y2 = line[0]
+        theta = np.rad2deg(np.arctan2(abs(y2-y1),abs(x2-x1)))
+        if is_height:
+            if theta < 10:
+                cv2.line(line_image,(x1,y1),(x2,y2),(255,255,255))
+        else:
+            if theta > 80:
+                cv2.line(line_image,(x1,y1),(x2,y2),(255,255,255))
+    # 線だけの画像で積算プロファイルを作成
+    line_image_blur = cv2.GaussianBlur(line_image,(5,5),0)
+    if is_height:
+        line_image_sum = np.sum(line_image_blur, axis=1)
+    else:
+        line_image_sum = np.sum(line_image_blur, axis=0)
+    # 自己相関で周期を求める
+    line_image_sum = line_image_sum - line_image_sum.mean()
+    acr = np.correlate(line_image_sum, line_image_sum, mode='full')
+    acr = acr[acr.size//2:]
+
+    h, w = image.shape
+    grid_size = min(h,w)
+    sq_size = int(grid_size/9+0.5)
+    return np.argmax(acr[int(sq_size/2):sq_size])+int(sq_size/2),line_image_sum
+
+#グリッド画像を作成
+def make_grid(h,w,margin):
+    grid_size_w = w*9
+    grid_size_h = h*9
+    margin = 3
+    grid = np.zeros((grid_size_h+margin*2,grid_size_w+margin*2), dtype = np.uint8)    
+    for i in range(10):
+        x1 = int(margin + i*w)
+        y1 = int(margin)
+        x2 = x1
+        y2 = int(y1 + 9*h)
+        cv2.line(grid,(x1,y1),(x2,y2),(255,255,255))
+        x1 = int(margin)
+        y1 = int(margin + i*h)
+        x2 = int(x1 + 9*w)
+        y2 = y1
+        cv2.line(grid,(x1,y1),(x2,y2),(255,255,255))
+    # 少しぼかす。
+    grid_image = cv2.GaussianBlur(grid,(5,5),0)
+    return grid_image
+
 # ます目検出
 def find_square(s_file, r_file):
     img = cv2.imread(s_file)
-    h, w, c = img.shape
-    grid_size = min(h,w)
-    sq_size = int(grid_size/9+0.5)
     gray = cv2.bitwise_not(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY))
     edges = cv2.Canny(gray,50,150,apertureSize = 3)
     minLineLength = 100
     maxLineGap = 10
     lines = cv2.HoughLinesP(edges,1,np.pi/180,100,minLineLength,maxLineGap)
-    ver = np.zeros_like(gray)
-    hor = np.zeros_like(gray)
-    for line in lines:
-        x1,y1,x2,y2 = line[0]
-        theta = np.rad2deg(np.arctan2(abs(y2-y1),abs(x2-x1)))
-        if theta > 80:
-            cv2.line(ver,(x1,y1),(x2,y2),(255,255,255))
-        if theta < 10:
-            cv2.line(hor,(x1,y1),(x2,y2),(255,255,255))
-    # 縦線だけの画像　で垂直方向の積算プロファイルを作成
-    ver_blur = cv2.GaussianBlur(ver,(5,5),0)
-    ver_sum = np.sum(ver_blur, axis=0)
-    # 横線だけの画像　で水平方向の積算プロファイルを作成
-    hor_blur = cv2.GaussianBlur(hor,(5,5),0)
-    hor_sum = np.sum(hor_blur, axis=1)
-    # それぞれの自己相関で周期を求める
-    ver_sum = ver_sum - ver_sum.mean()
-    v_acr = np.correlate(ver_sum, ver_sum, mode='full')
-    v_acr = v_acr[v_acr.size//2:]
-    sq_w = np.argmax(v_acr[int(sq_size/2):sq_size])+int(sq_size/2)
-  
-    hor_sum = hor_sum - hor_sum.mean()
-    h_acr = np.correlate(hor_sum, hor_sum, mode='full')
-    h_acr = h_acr[h_acr.size//2:]
-    sq_h = np.argmax(h_acr[int(sq_size/2):sq_size])+int(sq_size/2)
- 
-    #cycle = mean([ver_cycle,hor_cycle])
-    print("size",sq_h,sq_w,sq_size)
-    # その周期の平均で9x9のます目画像を作成
-    #sq_size = cycle
-    grid_size_w = sq_w*9
-    grid_size_h = sq_h*9
+    sq_w,ver_sum = find_square_height_width(gray,lines,False)
+    sq_h,hor_sum = find_square_height_width(gray,lines,True)
+    print("size",sq_h,sq_w)
+
+    # 求めた周期で9x9のます目画像を作成
     margin = 3
-    grid = np.zeros((grid_size_h+margin*2,grid_size_w+margin*2), dtype = np.uint8)    
-    for i in range(10):
-        x1 = int(margin + i*sq_w)
-        y1 = int(margin)
-        x2 = x1
-        y2 = int(y1 + 9*sq_h)
-        cv2.line(grid,(x1,y1),(x2,y2),(255,255,255))
-        x1 = int(margin)
-        y1 = int(margin + i*sq_h)
-        x2 = int(x1 + 9*sq_w)
-        y2 = y1
-        cv2.line(grid,(x1,y1),(x2,y2),(255,255,255))
-    # 少しぼかす。
-    grid_blur = cv2.GaussianBlur(grid,(5,5),0)
+    grid_blur = make_grid(sq_h,sq_w,margin)
     # ます目画像の積算プロファイルを作成
     ver_sum_grid = np.sum(grid_blur, axis=0)
     hor_sum_grid = np.sum(grid_blur, axis=1)
     # それぞれの積算プロファイルで1次元のパターンマッチングを行う。
-    ver_sum = ver_sum - ver_sum.mean()
     ver_sum_grid = ver_sum_grid - ver_sum_grid.mean()
-    hor_sum = hor_sum - hor_sum.mean()
     hor_sum_grid = hor_sum_grid - hor_sum_grid.mean()
     v_crr = np.correlate(ver_sum, ver_sum_grid)
     h_crr = np.correlate(hor_sum, hor_sum_grid)
@@ -91,6 +95,7 @@ def find_square(s_file, r_file):
     square_blur = cv2.GaussianBlur(square, (5, 5),0)
     sq_tops = np.zeros((9,9), dtype = int) 
     sq_lefts = np.zeros((9,9), dtype = int)  
+    h,w = gray.shape
     for y in range(9):
         top = max(min(int(ver_point+sq_h*y-sq_h*0.3+0.5),int(h-sq_h*1.6)),0)
         for x in range(9):
@@ -110,18 +115,17 @@ def find_square(s_file, r_file):
             x2 = x1 + sq_w
             y2 = y1 + sq_h
             cv2.rectangle(squares,(x1,y1),(x2,y2),colors[(x+y)%3])
-    # 9x9個のます目を作成し、その中の数字をOCRで読み取る。
+    # 9x9個のます目の位置を調整する。最小二乗法でグリッドの線を求め、そこから外れたます目の位置を調整する。
+
+    # ます目の中の数字をOCRで読み取る。
 
     file, ext = os.path.splitext(r_file)
-    save_graph(file+'_acr'+ext, v_acr, h_acr)
     save_graph(file+'_crr'+ext, v_crr, h_crr)
     save_graph(file+'_vsum'+ext, ver_sum, ver_sum_grid)
     save_graph(file+'_hsum'+ext, hor_sum, hor_sum_grid)
     cv2.imwrite(file+'_cross'+ext, edges)
-    cv2.imwrite(file+'_vh'+ext,cv2.vconcat([ver, hor]))
     cv2.imwrite(file+'_grid_blur'+ext, grid_blur)
-    cv2.imwrite(file+'_squares'+ext, squares)
-    cv2.imwrite(r_file, gray)
+    cv2.imwrite(r_file, squares)
 
 # 十字検出
 def find_cross(s_file, r_file):
