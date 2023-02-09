@@ -64,32 +64,9 @@ def find_grid(sum,grid_blur,margin,axis):
     point = np.argmax(crr)+margin # スタート位置
     return point,crr
 
-# ます目検出
-def find_square(s_file, r_file):
-    img = cv2.imread(s_file)
-    gray = cv2.bitwise_not(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY))
-    edges = cv2.Canny(gray,50,150,apertureSize = 3)
-    minLineLength = 100
-    maxLineGap = 10
-    lines = cv2.HoughLinesP(edges,1,np.pi/180,100,minLineLength,maxLineGap)
-    sq_w,ver_sum,v_acr = find_square_size(gray,lines,axis=0)
-    sq_h,hor_sum,h_acr = find_square_size(gray,lines,axis=1)
-    print("size:",sq_h,sq_w)
-    # 求めた周期で9x9のます目画像を作成
-    margin = 3
-    grid_blur = make_grid(sq_h,sq_w,margin)
-    # ます目画像とgridの積算プロファイルを作成し、相互相関でマッチングする位置を検出する。
-    ver_point,h_ccr = find_grid(hor_sum,grid_blur,margin,axis=1)
-    hor_point,v_ccr = find_grid(ver_sum,grid_blur,margin,axis=0)
-    print('point:', ver_point, hor_point)
-    # ます目のおおよその位置を確定する。
-    # ます目を1個づつ（計9x9回）、それを含む30%広いエリアで1ます目をぼかした画像とパターンマッチングを行う。
+def find_9x9square(gray,sq_h,sq_w,ver_point,hor_point,margin):
     square = np.zeros((sq_h+margin*2,sq_w+margin*2), dtype = np.uint8) 
-    x1 = margin
-    y1 = margin
-    x2 = x1+sq_w
-    y2 = y1+sq_h
-    cv2.rectangle(square,(x1,y1),(x2,y2),(255,255,255))
+    cv2.rectangle(square,(margin,margin),(margin+sq_w,margin+sq_h),(255,255,255))
     square_blur = cv2.GaussianBlur(square, (5, 5),0)
     sq_tops = np.zeros((9,9), dtype = int) 
     sq_lefts = np.zeros((9,9), dtype = int)  
@@ -104,6 +81,33 @@ def find_square(s_file, r_file):
             print('top:',top,'  left:',left)
             sq_tops[y,x] = maxLoc[1] + top + margin
             sq_lefts[y,x] = maxLoc[0] + left + margin
+    return sq_tops,sq_lefts
+
+# ます目検出
+def find_square(s_file, r_file):
+    img = cv2.imread(s_file)
+    gray = cv2.bitwise_not(cv2.cvtColor(img, cv2.COLOR_BGR2GRAY))
+    edges = cv2.Canny(gray,50,150,apertureSize = 3)
+    minLineLength = 100
+    maxLineGap = 10
+    lines = cv2.HoughLinesP(edges,1,np.pi/180,100,minLineLength,maxLineGap)
+    
+    #縦横の周期を自己相関から求める
+    sq_w,ver_sum,v_acr = find_square_size(gray,lines,axis=0)
+    sq_h,hor_sum,h_acr = find_square_size(gray,lines,axis=1)
+    print("size:",sq_h,sq_w)
+
+    # 求めた周期で9x9のます目画像を作成
+    margin = 3
+    grid_blur = make_grid(sq_h,sq_w,margin)
+
+    # ます目画像とgridの積算プロファイルを作成し、相互相関でマッチングする位置を検出する。
+    ver_point,h_ccr = find_grid(hor_sum,grid_blur,margin,axis=1)
+    hor_point,v_ccr = find_grid(ver_sum,grid_blur,margin,axis=0)
+    print('point:', ver_point, hor_point)
+
+    # ます目を1個づつ（計9x9回）、それを含む30%広いエリアで1ます目をぼかした画像とパターンマッチングを行う。
+    sq_tops,sq_lefts = find_9x9square(gray,sq_h,sq_w,ver_point,hor_point,margin)
 
     colors = [(0,0,255),(0,255,0),(255,0,0)]
     squares = np.copy(img)
