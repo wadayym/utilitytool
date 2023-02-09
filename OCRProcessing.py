@@ -9,13 +9,13 @@ mpl.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
-#縦横の周期を求める
-def find_square_height_width(image, lines, is_height):
+#縦横の周期を自己相関から求める
+def find_square_size(image, lines, axis):
     line_image = np.zeros_like(image)
     for line in lines:
         x1,y1,x2,y2 = line[0]
         theta = np.rad2deg(np.arctan2(abs(y2-y1),abs(x2-x1)))
-        if is_height:
+        if axis==1:
             if theta < 10:
                 cv2.line(line_image,(x1,y1),(x2,y2),(255,255,255))
         else:
@@ -23,10 +23,7 @@ def find_square_height_width(image, lines, is_height):
                 cv2.line(line_image,(x1,y1),(x2,y2),(255,255,255))
     # 線だけの画像で積算プロファイルを作成
     line_image_blur = cv2.GaussianBlur(line_image,(5,5),0)
-    if is_height:
-        line_image_sum = np.sum(line_image_blur, axis=1)
-    else:
-        line_image_sum = np.sum(line_image_blur, axis=0)
+    line_image_sum = np.sum(line_image_blur, axis=axis)
     # 自己相関で周期を求める
     line_image_sum = line_image_sum - line_image_sum.mean()
     acr = np.correlate(line_image_sum, line_image_sum, mode='full')
@@ -35,7 +32,7 @@ def find_square_height_width(image, lines, is_height):
     h, w = image.shape
     grid_size = min(h,w)
     sq_size = int(grid_size/9+0.5)
-    return np.argmax(acr[int(sq_size/2):sq_size])+int(sq_size/2),line_image_sum
+    return np.argmax(acr[int(sq_size/2):sq_size])+int(sq_size/2),line_image_sum,acr
 
 #グリッド画像を作成
 def make_grid(h,w,margin):
@@ -58,6 +55,15 @@ def make_grid(h,w,margin):
     grid_image = cv2.GaussianBlur(grid,(5,5),0)
     return grid_image
 
+# 積算プロファイルで1次元のパターンマッチングを行う。
+def find_grid(sum,grid_blur,margin,axis):
+    sum_grid = np.sum(grid_blur, axis=axis)
+    # そ積算プロファイルで1次元のパターンマッチングを行う。
+    sum_grid = sum_grid - sum_grid.mean()
+    crr = np.correlate(sum, sum_grid)
+    point = np.argmax(crr)+margin # スタート位置
+    return point,crr
+
 # ます目検出
 def find_square(s_file, r_file):
     img = cv2.imread(s_file)
@@ -66,23 +72,15 @@ def find_square(s_file, r_file):
     minLineLength = 100
     maxLineGap = 10
     lines = cv2.HoughLinesP(edges,1,np.pi/180,100,minLineLength,maxLineGap)
-    sq_w,ver_sum = find_square_height_width(gray,lines,False)
-    sq_h,hor_sum = find_square_height_width(gray,lines,True)
-    print("size",sq_h,sq_w)
-
+    sq_w,ver_sum,v_acr = find_square_size(gray,lines,axis=0)
+    sq_h,hor_sum,h_acr = find_square_size(gray,lines,axis=1)
+    print("size:",sq_h,sq_w)
     # 求めた周期で9x9のます目画像を作成
     margin = 3
     grid_blur = make_grid(sq_h,sq_w,margin)
-    # ます目画像の積算プロファイルを作成
-    ver_sum_grid = np.sum(grid_blur, axis=0)
-    hor_sum_grid = np.sum(grid_blur, axis=1)
-    # それぞれの積算プロファイルで1次元のパターンマッチングを行う。
-    ver_sum_grid = ver_sum_grid - ver_sum_grid.mean()
-    hor_sum_grid = hor_sum_grid - hor_sum_grid.mean()
-    v_crr = np.correlate(ver_sum, ver_sum_grid)
-    h_crr = np.correlate(hor_sum, hor_sum_grid)
-    hor_point = np.argmax(v_crr)+margin # 縦方向の積算プロファイルのずれ量が水平方向のスタート位置
-    ver_point = np.argmax(h_crr)+margin
+    # ます目画像とgridの積算プロファイルを作成し、相互相関でマッチングする位置を検出する。
+    ver_point,h_ccr = find_grid(hor_sum,grid_blur,margin,axis=1)
+    hor_point,v_ccr = find_grid(ver_sum,grid_blur,margin,axis=0)
     print('point:', ver_point, hor_point)
     # ます目のおおよその位置を確定する。
     # ます目を1個づつ（計9x9回）、それを含む30%広いエリアで1ます目をぼかした画像とパターンマッチングを行う。
@@ -104,14 +102,15 @@ def find_square(s_file, r_file):
             result = cv2.matchTemplate(target_img, square_blur, cv2.TM_CCOEFF_NORMED)
             minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(result)
             print('top:',top,'  left:',left)
-            sq_tops[y,x]=maxLoc[1]+top
-            sq_lefts[y,x]=maxLoc[0]+left
+            sq_tops[y,x] = maxLoc[1] + top + margin
+            sq_lefts[y,x] = maxLoc[0] + left + margin
+
     colors = [(0,0,255),(0,255,0),(255,0,0)]
     squares = np.copy(img)
     for y in range(9):
         for x in range(9):
-            x1 = sq_lefts[y,x] + margin
-            y1 = sq_tops[y,x] + margin
+            x1 = sq_lefts[y,x]
+            y1 = sq_tops[y,x]
             x2 = x1 + sq_w
             y2 = y1 + sq_h
             cv2.rectangle(squares,(x1,y1),(x2,y2),colors[(x+y)%3])
@@ -120,9 +119,8 @@ def find_square(s_file, r_file):
     # ます目の中の数字をOCRで読み取る。
 
     file, ext = os.path.splitext(r_file)
-    save_graph(file+'_crr'+ext, v_crr, h_crr)
-    save_graph(file+'_vsum'+ext, ver_sum, ver_sum_grid)
-    save_graph(file+'_hsum'+ext, hor_sum, hor_sum_grid)
+    save_graph(file+'_acr'+ext,v_acr,h_acr)
+    save_graph(file+'_ccr'+ext,v_ccr,h_ccr)
     cv2.imwrite(file+'_cross'+ext, edges)
     cv2.imwrite(file+'_grid_blur'+ext, grid_blur)
     cv2.imwrite(r_file, squares)
