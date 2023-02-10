@@ -82,7 +82,19 @@ def find_9x9square(gray,sq_h,sq_w,ver_point,hor_point,margin):
             sq_tops[y,x] = maxLoc[1] + top + margin
             sq_lefts[y,x] = maxLoc[0] + left + margin
     return sq_tops,sq_lefts
-
+# ます目を描画
+def draw_squres(sq_tops,sq_lefts,sq_w,sq_h,img):
+    colors = [(0,0,255),(0,255,0),(255,0,0)]
+    squares = np.copy(img)
+    for y in range(9):
+        for x in range(9):
+            x1 = sq_lefts[y,x]
+            y1 = sq_tops[y,x]
+            x2 = x1 + sq_w
+            y2 = y1 + sq_h
+            cv2.rectangle(squares,(x1,y1),(x2,y2),colors[(x+y)%3])
+    return squares
+    
 # ます目検出
 def find_square(s_file, r_file):
     img = cv2.imread(s_file)
@@ -108,16 +120,9 @@ def find_square(s_file, r_file):
 
     # ます目を1個づつ（計9x9回）、それを含む30%広いエリアで1ます目をぼかした画像とパターンマッチングを行う。
     sq_tops,sq_lefts = find_9x9square(gray,sq_h,sq_w,ver_point,hor_point,margin)
+    # ます目を描画
+    squares = draw_squres(sq_tops,sq_lefts,sq_w,sq_h,img)
 
-    colors = [(0,0,255),(0,255,0),(255,0,0)]
-    squares = np.copy(img)
-    for y in range(9):
-        for x in range(9):
-            x1 = sq_lefts[y,x]
-            y1 = sq_tops[y,x]
-            x2 = x1 + sq_w
-            y2 = y1 + sq_h
-            cv2.rectangle(squares,(x1,y1),(x2,y2),colors[(x+y)%3])
     # 9x9個のます目の位置を調整する。最小二乗法でグリッドの線を求め、そこから外れたます目の位置を調整する。
 
     # ます目の中の数字をOCRで読み取る。
