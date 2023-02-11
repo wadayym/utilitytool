@@ -77,7 +77,6 @@ def find_9x9square(gray,sq_h,sq_w,ver_point,hor_point,margin):
             target_img = gray[top:top+int(sq_h*1.6),left:left+int(sq_w*1.6)]
             result = cv2.matchTemplate(target_img, square_blur, cv2.TM_CCOEFF_NORMED)
             minVal, maxVal, minLoc, maxLoc = cv2.minMaxLoc(result)
-            print('top:',top,'  left:',left)
             sq_tops[y,x] = maxLoc[1] + top + margin
             sq_lefts[y,x] = maxLoc[0] + left + margin
     return sq_tops,sq_lefts
@@ -120,15 +119,15 @@ def tune_square_position(sq_tops,sq_lefts):
         x = np.empty(0, dtype=int)
         y = np.empty(0, dtype=int)
         for j in range(9):
-            if sq_lefts[i,j] > 0:
+            if sq_lefts[j,i] > 0:
                 x = np.append(x, sq_lefts[j,i])
-            if sq_tops[i,j] > 0:
+            if sq_tops[j,i] > 0:
                 y = np.append(y, sq_tops[j,i])
         c[i],d[i] = find_optimized_line(y,x) # x=c*y+d
     for i in range(9):
         for j in range(9):
-            lefts_tuned[i,j] = (b[j]*c[i]+d[i])/(1-a[j]*c[i]) 
-            tops_tuned[i,j] = (a[j]*d[i]+b[j])/(1-a[j]*c[i]) 
+            lefts_tuned[j,i] = (b[j]*c[i]+d[i])/(1-a[j]*c[i]) 
+            tops_tuned[j,i] = (a[j]*d[i]+b[j])/(1-a[j]*c[i]) 
     return tops_tuned,lefts_tuned
 
 
@@ -157,12 +156,43 @@ def find_square(s_file, r_file):
 
     # ます目を1個づつ（計9x9回）、それを含む30%広いエリアで1ます目をぼかした画像とパターンマッチングを行う。
     sq_tops,sq_lefts = find_9x9square(gray,sq_h,sq_w,ver_point,hor_point,margin)
+    sq_tops_original = np.copy(sq_tops)
+    sq_lefts_original = np.copy(sq_lefts)
+    print(sq_tops)
+    print(sq_lefts)
     # ます目を描画
     squares = draw_squres(sq_tops,sq_lefts,sq_w,sq_h,img)
 
     # 9x9個のます目の位置を調整する。最小二乗法でグリッドの線を求め、そこから外れたます目の位置を調整する。
     tops_tuned,lefts_tuned = tune_square_position(sq_tops,sq_lefts)
-    squares_tuned =  draw_squres(tops_tuned,lefts_tuned,sq_w,sq_h,img)
+    print(tops_tuned)
+    print(lefts_tuned)
+    print(tops_tuned-sq_tops)
+    print(lefts_tuned-sq_lefts)
+    for y in range(9):
+        for x in range(9):
+            if abs(tops_tuned[y,x]-sq_tops[y,x])>sq_h*0.1\
+            or abs(lefts_tuned[y,x]-sq_lefts[y,x])>sq_w*0.1:
+                sq_tops[y,x] = -1
+                sq_lefts[y,x] = -1
+    print(sq_tops)
+    print(sq_lefts)
+    tops_tuned,lefts_tuned = tune_square_position(sq_tops,sq_lefts)
+    print(tops_tuned)
+    print(lefts_tuned)
+    for y in range(9):
+        for x in range(9):
+            if abs(tops_tuned[y,x]-sq_tops_original[y,x])>sq_h*0.1\
+            or abs(lefts_tuned[y,x]-sq_lefts_original[y,x])>sq_w*0.1:
+                sq_tops[y,x] = tops_tuned[y,x]
+                sq_lefts[y,x] = lefts_tuned[y,x]
+            else:
+                sq_tops[y,x] = sq_tops_original[y,x]
+                sq_lefts[y,x] = sq_lefts_original[y,x]
+    squares_tuned =  draw_squres(sq_tops,sq_lefts,sq_w,sq_h,img)
+    print(sq_tops)
+    print(sq_lefts)
+
     # ます目の中の数字をOCRで読み取る。
 
     file, ext = os.path.splitext(r_file)
