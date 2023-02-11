@@ -3,7 +3,6 @@ import cv2
 import numpy as np
 import math
 from statistics import mean
-from PIL import Image, ImageSequence
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
@@ -94,7 +93,45 @@ def draw_squres(sq_tops,sq_lefts,sq_w,sq_h,img):
             y2 = y1 + sq_h
             cv2.rectangle(squares,(x1,y1),(x2,y2),colors[(x+y)%3])
     return squares
-    
+
+# 最小二乗法 y=a*x+b 戻り値：a,b
+def find_optimized_line(x,y):
+    A = np.vstack([x, np.ones(len(x))]).T
+    return np.linalg.lstsq(A, y, rcond=None)[0]
+
+# ます目の位置を調整
+def tune_square_position(sq_tops,sq_lefts):
+    tops_tuned = np.copy(sq_tops)
+    lefts_tuned = np.copy(sq_lefts)
+    a = np.zeros(9, dtype = float) 
+    b = np.zeros(9, dtype = float) 
+    c = np.zeros(9, dtype = float)  
+    d = np.zeros(9, dtype = float) 
+    for i in range(9):
+        x = np.empty(0, dtype=int)
+        y = np.empty(0, dtype=int)
+        for j in range(9):
+            if sq_lefts[i,j] > 0:
+                x = np.append(x, sq_lefts[i,j])
+            if sq_tops[i,j] > 0:
+                y = np.append(y, sq_tops[i,j])
+        a[i],b[i] = find_optimized_line(x,y) # y=a*x+b
+    for i in range(9):
+        x = np.empty(0, dtype=int)
+        y = np.empty(0, dtype=int)
+        for j in range(9):
+            if sq_lefts[i,j] > 0:
+                x = np.append(x, sq_lefts[j,i])
+            if sq_tops[i,j] > 0:
+                y = np.append(y, sq_tops[j,i])
+        c[i],d[i] = find_optimized_line(y,x) # x=c*y+d
+    for i in range(9):
+        for j in range(9):
+            lefts_tuned[i,j] = (b[j]*c[i]+d[i])/(1-a[j]*c[i]) 
+            tops_tuned[i,j] = (a[j]*d[i]+b[j])/(1-a[j]*c[i]) 
+    return tops_tuned,lefts_tuned
+
+
 # ます目検出
 def find_square(s_file, r_file):
     img = cv2.imread(s_file)
@@ -124,7 +161,8 @@ def find_square(s_file, r_file):
     squares = draw_squres(sq_tops,sq_lefts,sq_w,sq_h,img)
 
     # 9x9個のます目の位置を調整する。最小二乗法でグリッドの線を求め、そこから外れたます目の位置を調整する。
-
+    tops_tuned,lefts_tuned = tune_square_position(sq_tops,sq_lefts)
+    squares_tuned =  draw_squres(tops_tuned,lefts_tuned,sq_w,sq_h,img)
     # ます目の中の数字をOCRで読み取る。
 
     file, ext = os.path.splitext(r_file)
@@ -132,7 +170,7 @@ def find_square(s_file, r_file):
     save_graph(file+'_ccr'+ext,v_ccr,h_ccr)
     cv2.imwrite(file+'_cross'+ext, edges)
     cv2.imwrite(file+'_grid_blur'+ext, grid_blur)
-    cv2.imwrite(r_file, squares)
+    cv2.imwrite(r_file, squares_tuned)
 
 # 十字検出
 def find_cross(s_file, r_file):
