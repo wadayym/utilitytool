@@ -99,7 +99,42 @@ def find_optimized_line(x,y):
     return np.linalg.lstsq(A, y, rcond=None)[0]
 
 # ます目の位置を調整
-def tune_square_position(sq_tops,sq_lefts):
+def tune_square_position(sq_tops,sq_lefts,sq_h,sq_w):
+    sq_tops_tuned = np.copy(sq_tops)
+    sq_lefts_tuned = np.copy(sq_lefts)
+    tops_cross,lefts_cross = fined_cross_point(sq_tops,sq_lefts)
+    print(sq_tops)
+    print(sq_lefts)
+    print(tops_cross)
+    print(lefts_cross)
+    print(tops_cross-sq_tops)
+    print(lefts_cross-sq_lefts)
+    for y in range(9):
+        for x in range(9):
+            if abs(tops_cross[y,x]-sq_tops[y,x])>sq_h*0.1\
+            or abs(lefts_cross[y,x]-sq_lefts[y,x])>sq_w*0.1:
+                sq_tops_tuned[y,x] = -1
+                sq_lefts_tuned[y,x] = -1
+    print(sq_tops_tuned)
+    print(sq_lefts_tuned)
+    tops_cross,lefts_cross = fined_cross_point(sq_tops_tuned,sq_lefts_tuned)
+    print(tops_cross)
+    print(lefts_cross)
+    for y in range(9):
+        for x in range(9):
+            if abs(tops_cross[y,x]-sq_tops[y,x])>sq_h*0.1\
+            or abs(lefts_cross[y,x]-sq_lefts[y,x])>sq_w*0.1:
+                sq_tops_tuned[y,x] = tops_cross[y,x]
+                sq_lefts_tuned[y,x] = lefts_cross[y,x]
+            else:
+                sq_tops_tuned[y,x] = sq_tops[y,x]
+                sq_lefts_tuned[y,x] = sq_lefts[y,x]
+    print(sq_tops_tuned)
+    print(sq_lefts_tuned)
+    return sq_tops_tuned,sq_lefts_tuned
+
+# ます目の位置の候補を最小二乗法で求める
+def fined_cross_point(sq_tops,sq_lefts):
     tops_tuned = np.copy(sq_tops)
     lefts_tuned = np.copy(sq_lefts)
     a = np.zeros(9, dtype = float) 
@@ -156,42 +191,10 @@ def find_square(s_file, r_file):
 
     # ます目を1個づつ（計9x9回）、それを含む30%広いエリアで1ます目をぼかした画像とパターンマッチングを行う。
     sq_tops,sq_lefts = find_9x9square(gray,sq_h,sq_w,ver_point,hor_point,margin)
-    sq_tops_original = np.copy(sq_tops)
-    sq_lefts_original = np.copy(sq_lefts)
-    print(sq_tops)
-    print(sq_lefts)
-    # ます目を描画
-    squares = draw_squres(sq_tops,sq_lefts,sq_w,sq_h,img)
 
     # 9x9個のます目の位置を調整する。最小二乗法でグリッドの線を求め、そこから外れたます目の位置を調整する。
-    tops_tuned,lefts_tuned = tune_square_position(sq_tops,sq_lefts)
-    print(tops_tuned)
-    print(lefts_tuned)
-    print(tops_tuned-sq_tops)
-    print(lefts_tuned-sq_lefts)
-    for y in range(9):
-        for x in range(9):
-            if abs(tops_tuned[y,x]-sq_tops[y,x])>sq_h*0.1\
-            or abs(lefts_tuned[y,x]-sq_lefts[y,x])>sq_w*0.1:
-                sq_tops[y,x] = -1
-                sq_lefts[y,x] = -1
-    print(sq_tops)
-    print(sq_lefts)
-    tops_tuned,lefts_tuned = tune_square_position(sq_tops,sq_lefts)
-    print(tops_tuned)
-    print(lefts_tuned)
-    for y in range(9):
-        for x in range(9):
-            if abs(tops_tuned[y,x]-sq_tops_original[y,x])>sq_h*0.1\
-            or abs(lefts_tuned[y,x]-sq_lefts_original[y,x])>sq_w*0.1:
-                sq_tops[y,x] = tops_tuned[y,x]
-                sq_lefts[y,x] = lefts_tuned[y,x]
-            else:
-                sq_tops[y,x] = sq_tops_original[y,x]
-                sq_lefts[y,x] = sq_lefts_original[y,x]
-    squares_tuned =  draw_squres(sq_tops,sq_lefts,sq_w,sq_h,img)
-    print(sq_tops)
-    print(sq_lefts)
+    sq_tops_tuned,sq_lefts_tuned = tune_square_position(sq_tops,sq_lefts,sq_h,sq_w)
+    squares_tuned =  draw_squres(sq_tops_tuned,sq_lefts_tuned,sq_w,sq_h,img)
 
     # ます目の中の数字をOCRで読み取る。
 
