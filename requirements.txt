@@ -1,3 +1,4 @@
+opencv-python
 opencv-contrib-python
 flask_dropzone
 Werkzeug
