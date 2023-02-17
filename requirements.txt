@@ -6,6 +6,4 @@ PyPDF2
 Pillow
 pdfminer.six
 matplotlib
-scikit-build
-cmake
 opencv-python
