@@ -186,5 +186,6 @@ if __name__ == '__main__':
     for p in glob.glob(app.config['UPLOADED_PATH']+'/**', recursive=True):
         if os.path.isfile(p):
             #os.remove(p)
-            print('not removed : '+p)
+            #print('not removed : '+p)
+            pass
     app.run(debug=True)    
