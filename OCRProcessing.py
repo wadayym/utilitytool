@@ -2,11 +2,11 @@ import os
 import cv2
 import numpy as np
 import math
-from statistics import mean
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
+from PIL import Image
+import pytesseract
 
 #縦横の周期を自己相関から求める
 def find_square_size(image, lines, axis):
@@ -108,8 +108,46 @@ def draw_recog_area(sq_tops,sq_lefts,sq_w,sq_h,img):
             y1 = sq_tops[y,x]
             x2 = x1 + sq_w
             y2 = y1 + sq_h
-            cv2.rectangle(recogs,(x1,y1),(x2,y2),255)
+            cv2.rectangle(recogs,(x1,y1),(x2,y2),255)            
     return recogs
+
+# ます目に数字があるが判定する
+def judge_with_digit(sq_tops,sq_lefts,sq_w,sq_h,img):
+    recogs = np.copy(img)
+    count = np.zeros((9,9), dtype = int) 
+    find = np.zeros((9,9), dtype = bool) 
+    for y in range(9):
+        for x in range(9):
+            x1 = sq_lefts[y,x]
+            y1 = sq_tops[y,x]
+            x2 = x1 + sq_w
+            y2 = y1 + sq_h
+            count[y,x]=np.count_nonzero(recogs[y1:y2, x1:x2] > 0)
+            if count[y,x] > sq_w*sq_h*0.01:
+                find[y,x] = True
+    print('count & find:')
+    print(count)
+    print(find)
+    return find
+
+# ます目の中の数字をOCRで読み取る。
+def recognize_digit(gray,sq_dig,sq_tops,sq_lefts,sq_w,sq_h):
+    number_place = np.zeros((9,9), dtype = int) 
+    arr=np.full((9,9),'0',dtype=str)
+    dst = Image.new('RGB', (sq_w*9, sq_h*9))
+    for y in range(9):
+        for x in range(9):
+            if sq_dig[y,x]:
+                x1 = sq_lefts[y,x]+int(sq_w*0.1)
+                y1 = sq_tops[y,x]+int(sq_h*0.1)
+                x2 = x1 + int(sq_w*0.8)
+                y2 = y1 + int(sq_h*0.8)
+                img = Image.fromarray(gray[y1:y2, x1:x2])
+                arr[y,x] = pytesseract.image_to_string(img,lang='eng', config='--psm 6 --oem 1 -c tessedit_char_whitelist="123456789,"')
+                dst.paste(img, (x*sq_w+int(sq_w*0.1), y*sq_h+int(sq_h*0.1)))
+    print('number_place')
+    print(arr)
+    return number_place,dst
 
 # 最小二乗法 y=a*x+b 戻り値：a,b
 def find_optimized_line(x,y):
@@ -183,6 +221,7 @@ def fined_cross_point(sq_tops,sq_lefts):
             tops_tuned[j,i] = (a[j]*d[i]+b[j])/(1-a[j]*c[i]) 
     return tops_tuned,lefts_tuned
 
+
 # ます目検出
 def find_square(s_file, r_file):
     img = cv2.imread(s_file)
@@ -212,9 +251,14 @@ def find_square(s_file, r_file):
     # 9x9個のます目の位置を調整する。最小二乗法でグリッドの線を求め、そこから外れたます目の位置を調整する。
     sq_tops_tuned,sq_lefts_tuned = tune_square_position(sq_tops,sq_lefts,sq_h,sq_w)
     squares_tuned =  draw_squres(sq_tops_tuned,sq_lefts_tuned,sq_w,sq_h,img)
+
+    # 数字があるます目を見つける。
     recog_area1 = draw_recog_area(sq_tops_tuned+int(sq_h*0.1),sq_lefts_tuned+int(sq_w*0.1),int(sq_w*0.8),int(sq_h*0.8),edges)
     recog_area2 = draw_recog_area(sq_tops_tuned+int(sq_h*0.2),sq_lefts_tuned+int(sq_w*0.2),int(sq_w*0.6),int(sq_h*0.6),recog_area1)
+    sq_dig = judge_with_digit(sq_tops_tuned+int(sq_h*0.2),sq_lefts_tuned+int(sq_w*0.2),int(sq_w*0.6),int(sq_h*0.6),edges)
+
     # ます目の中の数字をOCRで読み取る。
+    number_place,image_for_recog = recognize_digit(gray,sq_dig,sq_tops_tuned,sq_lefts_tuned,sq_w,sq_h)
 
     file, ext = os.path.splitext(r_file)
     save_graph(file+'_sum'+ext,ver_sum,hor_sum)
@@ -224,6 +268,7 @@ def find_square(s_file, r_file):
     cv2.imwrite(file+'_grid_blur'+ext, grid_blur)
     cv2.imwrite(file+'_recog_area'+ext,recog_area2)
     cv2.imwrite(file+'_line'+ext,cv2.hconcat([ver_line_image, hor_line_image]))
+    cv2.imwrite(file+'_squares'+ext,np.array(image_for_recog))
     cv2.imwrite(r_file, squares_tuned)
 
 # 十字検出
