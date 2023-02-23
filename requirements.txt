@@ -6,4 +6,6 @@ PyPDF2
 Pillow
 pdfminer.six
 matplotlib
-opencv-python
+scikit-image
+opencv-python-headless
+pytesseract
