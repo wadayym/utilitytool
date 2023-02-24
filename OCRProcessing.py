@@ -132,6 +132,7 @@ def judge_with_digit(sq_tops,sq_lefts,sq_w,sq_h,img):
 
 # ます目の中の数字をOCRで読み取る。
 def recognize_digit(gray,sq_dig,sq_tops,sq_lefts,sq_w,sq_h):
+    #gray_not = cv2.bitwise_not(gray)
     number_place = np.zeros((9,9), dtype = int) 
     arr=np.full((9,9),'0',dtype=str)
     dst = Image.new('RGB', (sq_w*9, sq_h*9))
@@ -141,9 +142,10 @@ def recognize_digit(gray,sq_dig,sq_tops,sq_lefts,sq_w,sq_h):
                 x1 = sq_lefts[y,x]+int(sq_w*0.1)
                 y1 = sq_tops[y,x]+int(sq_h*0.1)
                 x2 = x1 + int(sq_w*0.8)
-                y2 = y1 + int(sq_h*0.8)
-                img = Image.fromarray(gray[y1:y2, x1:x2])
-                arr[y,x] = pytesseract.image_to_string(img,lang='eng', config='--psm 6 --oem 1 -c tessedit_char_whitelist="123456789,"')
+                y2 = y1 + int(sq_h*0.8)             
+                ret, th = cv2.threshold(gray[y1:y2, x1:x2], 0, 255, cv2.THRESH_OTSU)
+                img = Image.fromarray(th)
+                arr[y,x] = pytesseract.image_to_string(img, lang='eng', config='--psm 6 --oem 1 -c tessedit_char_whitelist="123456789"')
                 dst.paste(img, (x*sq_w+int(sq_w*0.1), y*sq_h+int(sq_h*0.1)))
     print('number_place')
     print(arr)
