@@ -132,10 +132,9 @@ def judge_with_digit(sq_tops,sq_lefts,sq_w,sq_h,img):
 
 # ます目の中の数字をOCRで読み取る。
 def recognize_digit(gray,sq_dig,sq_tops,sq_lefts,sq_w,sq_h):
-    #gray_not = cv2.bitwise_not(gray)
     number_place = np.zeros((9,9), dtype = int) 
     arr=np.full((9,9),'0',dtype=str)
-    dst = Image.new('RGB', (sq_w*9, sq_h*9))
+    dst = Image.new('RGB', (sq_w*9, sq_h*9),(127,127,127))
     for y in range(9):
         for x in range(9):
             if sq_dig[y,x]:
@@ -145,10 +144,16 @@ def recognize_digit(gray,sq_dig,sq_tops,sq_lefts,sq_w,sq_h):
                 y2 = y1 + int(sq_h*0.8)             
                 ret, th = cv2.threshold(gray[y1:y2, x1:x2], 0, 255, cv2.THRESH_OTSU)
                 img = Image.fromarray(th)
-                arr[y,x] = pytesseract.image_to_string(img, lang='eng', config='--psm 6 --oem 1 -c tessedit_char_whitelist="123456789"')
+                str_digit = pytesseract.image_to_string(img, lang='eng', config='--psm 6 --oem 1 -c tessedit_char_whitelist="123456789"')
+                arr[y,x] = str_digit
+                if(str_digit >= '1' and str_digit <= '9'):
+                    number_place[y,x] = int(str_digit)
+                else:
+                    number_place[y,x] = -1
                 dst.paste(img, (x*sq_w+int(sq_w*0.1), y*sq_h+int(sq_h*0.1)))
     print('number_place')
     print(arr)
+    print(number_place)
     return number_place,dst
 
 # 最小二乗法 y=a*x+b 戻り値：a,b
@@ -270,8 +275,9 @@ def find_square(s_file, r_file):
     cv2.imwrite(file+'_grid_blur'+ext, grid_blur)
     cv2.imwrite(file+'_recog_area'+ext,recog_area2)
     cv2.imwrite(file+'_line'+ext,cv2.hconcat([ver_line_image, hor_line_image]))
-    cv2.imwrite(file+'_squares'+ext,np.array(image_for_recog))
-    cv2.imwrite(r_file, squares_tuned)
+    cv2.imwrite(file+'_squares'+ext, squares_tuned)
+    cv2.imwrite(r_file,np.array(image_for_recog))
+
 
 # 十字検出
 def find_cross(s_file, r_file):
