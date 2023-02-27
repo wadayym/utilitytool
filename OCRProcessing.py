@@ -146,10 +146,13 @@ def recognize_digit(gray,sq_dig,sq_tops,sq_lefts,sq_w,sq_h):
                 img = Image.fromarray(th)
                 str_digit = pytesseract.image_to_string(img, lang='eng', config='--psm 6 --oem 1 -c tessedit_char_whitelist="123456789"')
                 arr[y,x] = str_digit
-                if(str_digit >= '1' and str_digit <= '9'):
-                    number_place[y,x] = int(str_digit)
-                else:
-                    number_place[y,x] = -1
+                try:
+                    num = int(str_digit)
+                    if num < 1 or num > 9:
+                        num = -1
+                except ValueError:
+                    num = -1                             
+                number_place[y,x] = num                
                 dst.paste(img, (x*sq_w+int(sq_w*0.1), y*sq_h+int(sq_h*0.1)))
     print('number_place')
     print(arr)
