@@ -231,6 +231,22 @@ def fined_cross_point(sq_tops,sq_lefts):
             tops_tuned[j,i] = (a[j]*d[i]+b[j])/(1-a[j]*c[i]) 
     return tops_tuned,lefts_tuned
 
+def  overlay_result(img, number_place, sq_tops_tuned,sq_lefts_tuned):
+    img_recognized = img.copy()
+    text = "0"
+    fontFace = cv2.FONT_HERSHEY_SCRIPT_SIMPLEX
+    fontScale = 2
+    thickness = 3
+    baseline = 0
+    (w, h), baseline = cv2.getTextSize(text, fontFace, fontScale, thickness)
+    baseline += thickness
+    for i in range(9):
+        for j in range(9):
+             text = str(number_place[j,i])
+             if text == "0":
+                 text = "."
+             cv2.putText(img_recognized, text, [sq_lefts_tuned[j,i], sq_tops_tuned[j,i] + h], fontFace, fontScale, [255,255,255], thickness, 8)
+    return img_recognized
 
 # ます目検出
 def find_square(s_file, r_file):
@@ -270,6 +286,9 @@ def find_square(s_file, r_file):
     # ます目の中の数字をOCRで読み取る。
     number_place,image_for_recog = recognize_digit(gray,sq_dig,sq_tops_tuned,sq_lefts_tuned,sq_w,sq_h)
 
+    #　読み取った数字をオーバレイする。
+    image_recognised = overlay_result(img, number_place, sq_tops_tuned,sq_lefts_tuned)
+
     file, ext = os.path.splitext(r_file)
     save_graph(file+'_sum'+ext,ver_sum,hor_sum)
     save_graph(file+'_acr'+ext,v_acr,h_acr)
@@ -279,7 +298,7 @@ def find_square(s_file, r_file):
     cv2.imwrite(file+'_recog_area'+ext,recog_area2)
     cv2.imwrite(file+'_line'+ext,cv2.hconcat([ver_line_image, hor_line_image]))
     cv2.imwrite(file+'_squares'+ext, squares_tuned)
-    cv2.imwrite(r_file,np.array(image_for_recog))
+    cv2.imwrite(r_file,np.array(image_recognised))
 
 
 # 十字検出
