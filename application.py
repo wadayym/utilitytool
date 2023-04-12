@@ -92,11 +92,8 @@ class ProcessSettings:
         
         elif self.param_dict['process'] == "カメラ表示":
             filename_result += '.png'
-            # s_img = Image.open(self.param_dict['file_name'])
             # ここで処理する
-            find_square(os.path.join("./images", "np1.png"),filename_result)
-            #s_img = Image.open(os.path.join("./images", "np1.png"))
-            #s_img.save(filename_result)
+            find_square(self.param_dict['file_name'],filename_result)
 
         current_time = time.perf_counter()
         print(self.param_dict['process']+" processing time = {:.3f}sec".format(current_time - start_time))

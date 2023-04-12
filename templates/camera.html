@@ -9,56 +9,59 @@
 </head>
 
 <body>
-	<video  id="player" width="1200" height="900" autoplay></video>
-	<button id="capture">Capture</button>
+	<dl>
+		<dt>ナンバープレースの問題を背面カメラで撮影してください</dt>
+		<dd>
+		  <div>
+		  <label>
+		    <input type="file" id="npimage" capture="environment" accept="image/*">
+		  </label>
+		  </div>
+		</dd>
+	</dl>	
+
 	<canvas id="canvas" width="1200" height="900"></canvas>
 	
 	<script>
-		var constraints = {
-			audio: false,
-			video: true,
-		};
-
-		var ua = navigator.userAgent;
-		if(ua.indexOf("iPhone") > 0 || ua.indexOf("Android") > 0 && ua.indexOf("Mobile") > 0){
-			constraints = {
-				audio: false,
-				video: {facingMode:'environment'},
-			};
-		}
-		
-		const video = document.getElementById('player');
-		const canvas = document.getElementById('canvas');
-		const context = canvas.getContext('2d');
-		const captureButton = document.getElementById('capture');
-		
 		var form = document.createElement('form');
 		var request = document.createElement('input');
-	
+
+		const canvas = document.getElementById('canvas');
+		const context = canvas.getContext('2d');
+
 		form.method = 'POST';
 		form.action = '/camera';
 	
 		request.type = 'hidden'; //入力フォームが表示されないように
 		request.name = 'image';
-	
-		captureButton.addEventListener('click', () => {
-			// Draw the video frame to the canvas.
-			context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+		// input要素
+		const fileInput = document.getElementById('npimage');
+
+		var img = new Image();
+
+		// changeイベントで呼び出す関数
+		const handleFileSelect = () => {
+			const files = fileInput.files;
+			for (let i = 0; i < files.length; i++) {
+				console.log(files[i]); // 1つ1つのファイルデータはfiles[i]で取得できる
+			}
+			let reader = new FileReader();
+			reader.readAsDataURL(files[0]);		
+			reader.onload = () => {
+				img.src = reader.result;
+			}
+		}
+		img.onload = function(){			
+			context.drawImage(img, 0, 0, canvas.width, canvas.height);
 			const base64_png = canvas.toDataURL("image/png");
 			request.value = base64_png;
 			form.appendChild(request);
 			document.body.appendChild(form);
 			form.submit();
-		});
-
-		const media = navigator.mediaDevices.getUserMedia(constraints);
-		media.then(successCallback).catch(errorCallback);
-		function successCallback(stream) {
-			video.srcObject = stream;
-		};
-		function errorCallback(err) {
-			alert(err);
-		};
+		}
+		// ファイル選択時にhandleFileSelectを発火
+		fileInput.addEventListener('change', handleFileSelect);
 	</script>
 
 </body>
