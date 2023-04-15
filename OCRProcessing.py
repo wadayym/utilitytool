@@ -146,7 +146,8 @@ def recognize_digit(gray,sq_dig,sq_tops,sq_lefts,sq_w,sq_h):
                 img = Image.fromarray(th)
                 # str_digit = pytesseract.image_to_string(img, lang='eng', config='--psm 6 --oem 1 -c tessedit_char_whitelist="123456789"')
                 # str_digit = pytesseract.image_to_string(img, lang='eng', config='--psm 10 --oem 3 -c tessedit_char_whitelist="123456789"')
-                str_digit = pytesseract.image_to_string(img, lang='eng', config='--psm 6 --oem 3 -c tessedit_char_whitelist="123456789"')
+                # str_digit = pytesseract.image_to_string(img, lang='eng', config='--psm 6 --oem 3 -c tessedit_char_whitelist="123456789"')
+                str_digit = pytesseract.image_to_string(img)
                 arr[y,x] = str_digit
                 try:
                     num = int(str_digit)
