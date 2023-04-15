@@ -298,7 +298,8 @@ def find_square(s_file, r_file):
     cv2.imwrite(file+'_recog_area'+ext,recog_area2)
     cv2.imwrite(file+'_line'+ext,cv2.hconcat([ver_line_image, hor_line_image]))
     cv2.imwrite(file+'_squares'+ext, squares_tuned)
-    cv2.imwrite(r_file,np.array(image_recognised))
+    # cv2.imwrite(r_file,np.array(image_recognised))
+    cv2.imwrite(r_file,np.array(image_for_recog))
 
 
 # 十字検出
