@@ -144,10 +144,10 @@ def recognize_digit(gray,sq_dig,sq_tops,sq_lefts,sq_w,sq_h):
                 y2 = y1 + int(sq_h*0.8)             
                 ret, th = cv2.threshold(gray[y1:y2, x1:x2], 0, 255, cv2.THRESH_OTSU)
                 img = Image.fromarray(th)
-                # str_digit = pytesseract.image_to_string(img, lang='eng', config='--psm 6 --oem 1 -c tessedit_char_whitelist="123456789"')
+                str_digit = pytesseract.image_to_string(img, lang='eng', config='--psm 6 --oem 1 -c tessedit_char_whitelist="123456789"')
                 # str_digit = pytesseract.image_to_string(img, lang='eng', config='--psm 10 --oem 3 -c tessedit_char_whitelist="123456789"')
                 # str_digit = pytesseract.image_to_string(img, lang='eng', config='--psm 6 --oem 3 -c tessedit_char_whitelist="123456789"')
-                str_digit = pytesseract.image_to_string(img)
+                # str_digit = pytesseract.image_to_string(img)
                 arr[y,x] = str_digit
                 try:
                     num = int(str_digit)
