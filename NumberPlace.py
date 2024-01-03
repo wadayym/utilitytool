@@ -2,7 +2,7 @@ import numpy as np
 
 class NumberPlace:
     def __init__(self):
-        self.number_table = np.zeros((9, 9), dtype=np.int)
+        self.number_table = np.zeros((9, 9), dtype=np.int32)
 
     def set(self, i, j, value): 
         self.number_table[i][j] = value
