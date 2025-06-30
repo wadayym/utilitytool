@@ -10,8 +10,3 @@ matplotlib
 scikit-image
 opencv-python-headless
 pytesseract
-ipywidgets
-torch
-torchvision
-tqdm
-scipy
