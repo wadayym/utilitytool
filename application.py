@@ -13,7 +13,7 @@ from pathlib import Path
 from io import BytesIO
 from PdfProcessing import pdf_roll, pdf2text, pdfvertical2text
 from NumberPlace import NumberPlace
-from OCRProcessingRevised import find_square
+from OCRProcessing import find_square
 
 print(sys.version)
 app = Flask(__name__)
