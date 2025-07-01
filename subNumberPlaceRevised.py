@@ -55,7 +55,7 @@ class NumberPlace:
         return np.count_nonzero(self.work_table[:,j])
 
     def check(self, n):
-        print("len:",len(self.order_table))
+        #print("len:",len(self.order_table))
         if n >= len(self.order_table):
             return True
         i = self.order_table[n][0]
