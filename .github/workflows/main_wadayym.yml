@@ -31,18 +31,23 @@ jobs:
           python -m venv venv
           source venv/bin/activate
       
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-        
-      # Optional: Add step to run tests here (PyTest, Django test suites, etc.)
-      
-      - name: Upload artifact for deployment jobs
+      - name: Install dependencies to current directory
+        run: pip install -r requirements.txt -t .
+
+      - name: Clean up unnecessary files
+        run: |
+          rm -rf torch/test torch/include torch/share
+          rm -rf torchvision/test torchvision/include torchvision/share
+
+      - name: Zip application for deployment
+        run: |
+          zip -r app.zip . -x "venv/*" "*.pyc" "__pycache__/*" ".git/*"
+
+      - name: Upload artifact for deployment
         uses: actions/upload-artifact@v4
         with:
           name: python-app
-          path: |
-            . 
-            !venv/
+          path: app.zip
 
   deploy:
     runs-on: ubuntu-latest
