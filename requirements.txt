@@ -13,5 +13,4 @@ pytesseract
 ipywidgets
 torch==2.2.2
 torchvision==0.17.2
-tqdm
 scipy
