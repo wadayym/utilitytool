@@ -6,7 +6,6 @@ import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 from PIL import Image
-import pytesseract
 
 #縦横の周期を自己相関から求める
 def find_square_size(image, lines, axis):
@@ -144,10 +143,7 @@ def recognize_digit(gray,sq_dig,sq_tops,sq_lefts,sq_w,sq_h):
                 y2 = y1 + int(sq_h*0.8)             
                 ret, th = cv2.threshold(gray[y1:y2, x1:x2], 0, 255, cv2.THRESH_OTSU)
                 img = Image.fromarray(th)
-                str_digit = pytesseract.image_to_string(img, lang='eng', config='--psm 6 --oem 1 -c tessedit_char_whitelist="123456789"')
-                # str_digit = pytesseract.image_to_string(img, lang='eng', config='--psm 10 --oem 3 -c tessedit_char_whitelist="123456789"')
-                # str_digit = pytesseract.image_to_string(img, lang='eng', config='--psm 6 --oem 3 -c tessedit_char_whitelist="123456789"')
-                # str_digit = pytesseract.image_to_string(img)
+                str_digit = '0''
                 arr[y,x] = str_digit
                 try:
                     num = int(str_digit)

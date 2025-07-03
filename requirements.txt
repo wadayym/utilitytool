@@ -9,4 +9,3 @@ pdfminer.six
 matplotlib
 scikit-image
 opencv-python-headless
-pytesseract
