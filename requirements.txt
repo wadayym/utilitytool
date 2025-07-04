@@ -7,6 +7,4 @@ PyPDF2
 Pillow
 pdfminer.six
 matplotlib
-scikit-image
 opencv-python-headless
-torch --index-url https://download.pytorch.org/whl/cpu
