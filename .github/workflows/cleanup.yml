@@ -1,0 +1,28 @@
+name: Cleanup Artifacts, Logs, and Cache
+
+on:
+  schedule:
+    - cron: '0 18 * * *'  # 毎日JST 03:00実行（UTC換算）
+  workflow_dispatch:  # 手動トリガーも可能
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete old artifacts
+        uses: c-hive/gha-delete-artifacts@v2
+        with:
+          age: '3 days'
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete caches older than 7 days
+        uses: easimon/github-action-delete-caches@v2
+        with:
+          cache-age: 3  # キャッシュの保存日数
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete workflow logs
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          retain_days: 3
+          token: ${{ secrets.GITHUB_TOKEN }}
