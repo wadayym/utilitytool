@@ -1,13 +1,8 @@
 Flask==2.3.3
 flask_dropzone
 Werkzeug
-redis
 numpy
 PyPDF2
-Pillow
 pdfminer.six
-matplotlib
-scikit-image
 opencv-python-headless
-onnx
 onnxruntime

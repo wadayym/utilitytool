@@ -2,9 +2,9 @@ import os
 import cv2
 import numpy as np
 
-import subModule as subM
 import subImageProcessClass as subIP
 import subNumberPlaceRevised as subNP
+import subONNX as subOnnx
 
 def find_square(s_file, r_file):
     IPClass = subIP.ImageProcess(s_file)
@@ -25,8 +25,9 @@ def find_square(s_file, r_file):
 
     # 十字の中心点を元の画像に変換
     gridImages = IPClass.getGridImages(cross_points, rect)
-    net = subM.loadNetwork('./net/net.pth')
 
+    # ONNXモデルを読み込む
+    ONNXClass = subOnnx.Onnx('../net/model.onnx')
     # 画像から数字を推論し、タイル状画像を作成 (9行9列)
     tile_image = np.full((9*70, 9*70, 3), 100, dtype=np.uint8)
     NPClass = subNP.NumberPlace()
@@ -37,8 +38,9 @@ def find_square(s_file, r_file):
             im = np.clip(im, 0, 255).astype(np.uint8)
             im = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
             im = cv2.bitwise_not(im)
-            result = subNN.predict(net, im)
-            NPClass.set(j, i, result)
+            # ONNXモデルで推論
+            max_idx, max_value = ONNXClass.predict(im)
+            NPClass.set(j, i, max_idx)
             # タイル状画像に配置
             tile_image[j*70+3:(j+1)*70-3, i*70+3:(i+1)*70-3] = gridImages[i,j]
 
