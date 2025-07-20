@@ -27,7 +27,7 @@ def find_square(s_file, r_file):
     gridImages = IPClass.getGridImages(cross_points, rect)
 
     # ONNXモデルを読み込む
-    ONNXClass = subOnnx.Onnx('../net/model.onnx')
+    ONNXClass = subOnnx.Onnx('./net/model.onnx')
     # 画像から数字を推論し、タイル状画像を作成 (9行9列)
     tile_image = np.full((9*70, 9*70, 3), 100, dtype=np.uint8)
     NPClass = subNP.NumberPlace()
