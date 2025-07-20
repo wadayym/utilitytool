@@ -9,4 +9,5 @@ pdfminer.six
 matplotlib
 scikit-image
 opencv-python-headless
-scipy
+onnx
+onnxruntime

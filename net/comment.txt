@@ -1,3 +1,0 @@
-Epoch 65/100, Loss: 0.00033151, Accuracy: 99.9981%
-Val Loss: 0.00000002, Accuracy: 100.0000%
-Training time(1 Epoch): 358.92 seconds. 2025-06-27 22:28:16

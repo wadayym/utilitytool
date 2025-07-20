@@ -1,10 +1,7 @@
-import os
 import sys
 import numpy as np
 import itertools
 import cv2
-from PIL import Image
-from scipy.optimize import basinhopping
 
 class ImageProcess:
     def __init__(self, file_name):
@@ -19,8 +16,9 @@ class ImageProcess:
 
         # convert to gray
         self.gray = cv2.cvtColor(self.img, cv2.COLOR_BGR2GRAY)
+        #self.gray = np.max(self.img, axis=2).astype(np.uint8)  # RGBの最大値をとる
 
-        edgeImage = cv2.Canny(self.gray, 50, 128)
+        edgeImage = cv2.Canny(self.gray, 96, 128)
         # Closing morphology
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5,5))
         self.edge = cv2.morphologyEx(edgeImage, cv2.MORPH_CLOSE, kernel)
@@ -59,9 +57,11 @@ class ImageProcess:
 
         # 輪郭のノイズを除去する
         setImages = []
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5,5))
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3,3))
         for filledImg in filledImages:
-            setImg = cv2.morphologyEx(filledImg, cv2.MORPH_OPEN, kernel)
+            #setImg = cv2.morphologyEx(filledImg, cv2.MORPH_OPEN, kernel)
+            setimg0 = cv2.erode(filledImg, kernel, iterations=4)
+            setImg = cv2.dilate(setimg0, kernel, iterations=3)
             setImages.append(setImg)
 
         # contours 再度検出
@@ -107,70 +107,6 @@ class ImageProcess:
                     square = c
         return square
 
-    def getLineImage(self, square):
-        # 線分化
-        poly_length = cv2.arcLength(square, True)
-        threshold = int(poly_length / 12)
-        minLineLength = int(poly_length / 200)
-        maxLineGap = 5
-        if threshold < 1:
-            threshold = 1
-        if minLineLength < 1:
-            minLineLength = 1
-        lines = cv2.HoughLinesP(self.edge, 1, np.radians(1), threshold, minLineLength, maxLineGap)
-        line_mat = np.zeros(self.edge.shape, np.uint8)
-        for x1, y1, x2, y2 in lines[:, 0]:
-            cv2.line(line_mat, (x1, y1), (x2, y2), 255, 1)
-            
-        # 矩形の外をマスクアウト
-        mask = np.zeros(line_mat.shape, np.uint8)
-        cv2.fillConvexPoly(mask, square, 1)
-        
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-        mask = cv2.dilate(mask, kernel, iterations=3)
-        line_mat[np.where(mask == 0)] = 0
-        return line_mat
-
-    # スコアマトリックスを生成する
-    def gen_score_mat(self):
-        # スコアマトリックスを生成
-        cell = np.fromfunction(
-            lambda x, y: np.maximum((10 - x) ** 2, (10 - y) ** 2) / 100.0,
-            (21, 21),
-            dtype=np.float32
-        )
-        score_mat = np.zeros((209, 209), np.float32)
-        for i in range(209):
-            for j in range(209):
-                l = min(i, j, 208 - i, 208 - j)
-                if l > 10:
-                    continue
-                score_mat[i, j] = l*l/100.0
-        score_mat[10:199, 10:199] = np.tile(cell, (9, 9))
-        return score_mat
-
-    def get_get_fit_score(self,line_mat, score_mat):
-        def get_fit_score(x):
-            img_pnts = np.float32(x).reshape(4, 2)
-            score_size = score_mat.shape[0]
-            score_pnts = np.float32([[10, 10], [10, score_size-10], [score_size-10, score_size-10], [score_size-10, 10]])
-            transform = cv2.getPerspectiveTransform(score_pnts, img_pnts)
-            score_t = cv2.warpPerspective(score_mat, transform, (self.edge.shape[1], self.edge.shape[0]))
-            # スコアを計算
-            res = line_mat * score_t
-            return -np.average(res[np.where(res > 255 * 0.1)])
-            #return -np.sum(res)
-        return get_fit_score
-    
-    def fitRectangle(self, square, line_mat):
-        score_mat = self.gen_score_mat()
-        get_fit_score = self.get_get_fit_score(line_mat, score_mat)
-        x0 = square.flatten()
-        ret = basinhopping(get_fit_score, x0, T=0.1, niter=300, stepsize=3)
-        rect = ret.x.reshape((4, 2)).astype(np.float32)
-        score = ret.fun
-        return rect, score
-
     def transformedImage(self, rect):
         # 元画像を正規化する
         grid_size, margin, grid_pnts = self.getGridPoints() # グリッドマトリックス
@@ -200,7 +136,7 @@ class ImageProcess:
                             [0, 0, 0, 1, 0, 0, 0],
                             [0, 0, 0, 1, 0, 0, 0],
                             [0, 0, 0, 1, 0, 0, 0]], dtype=np.float32)
-        kernel = cv2.resize(kernel, (21, 21), interpolation=cv2.INTER_AREA)
+        kernel = cv2.resize(kernel, (31, 31), interpolation=cv2.INTER_AREA)
         kernel = cv2.GaussianBlur(kernel, ksize=(3, 3), sigmaX=0, borderType = cv2.BORDER_REPLICATE) 
         center = kernel / np.sum(kernel)  # 正規化
         # 左上
@@ -211,7 +147,7 @@ class ImageProcess:
                             [0, 0, 0, 1, 0, 0, 0],
                             [0, 0, 0, 1, 0, 0, 0],
                             [0, 0, 0, 1, 0, 0, 0]], dtype=np.float32)
-        kernel = cv2.resize(kernel, (21, 21), interpolation=cv2.INTER_AREA)
+        kernel = cv2.resize(kernel, (31, 31), interpolation=cv2.INTER_AREA)
         kernel = cv2.GaussianBlur(kernel, ksize=(3, 3), sigmaX=0, borderType = cv2.BORDER_REPLICATE) 
         left_top = kernel / np.sum(kernel)  # 正規化
         # 右上
@@ -222,7 +158,7 @@ class ImageProcess:
                             [0, 0, 0, 1, 0, 0, 0],
                             [0, 0, 0, 1, 0, 0, 0],
                             [0, 0, 0, 1, 0, 0, 0]], dtype=np.float32)
-        kernel = cv2.resize(kernel, (21, 21), interpolation=cv2.INTER_AREA)
+        kernel = cv2.resize(kernel, (31, 31), interpolation=cv2.INTER_AREA)
         kernel = cv2.GaussianBlur(kernel, ksize=(3, 3), sigmaX=0, borderType = cv2.BORDER_REPLICATE) 
         right_top = kernel / np.sum(kernel)  # 正規化
         # 左下
@@ -233,7 +169,7 @@ class ImageProcess:
                             [0, 0, 0, 0, 0, 0, 0],
                             [0, 0, 0, 0, 0, 0, 0],
                             [0, 0, 0, 0, 0, 0, 0]], dtype=np.float32)
-        kernel = cv2.resize(kernel, (21, 21), interpolation=cv2.INTER_AREA)
+        kernel = cv2.resize(kernel, (31, 31), interpolation=cv2.INTER_AREA)
         kernel = cv2.GaussianBlur(kernel, ksize=(3, 3), sigmaX=0, borderType = cv2.BORDER_REPLICATE) 
         left_bottom = kernel / np.sum(kernel)  # 正規化
         # 右下
@@ -244,7 +180,7 @@ class ImageProcess:
                             [0, 0, 0, 0, 0, 0, 0],
                             [0, 0, 0, 0, 0, 0, 0],
                             [0, 0, 0, 0, 0, 0, 0]], dtype=np.float32)
-        kernel = cv2.resize(kernel, (21, 21), interpolation=cv2.INTER_AREA)
+        kernel = cv2.resize(kernel, (31, 31), interpolation=cv2.INTER_AREA)
         kernel = cv2.GaussianBlur(kernel, ksize=(3, 3), sigmaX=0, borderType = cv2.BORDER_REPLICATE) 
         right_bottom = kernel / np.sum(kernel)  # 正規化
         # 左
@@ -255,7 +191,7 @@ class ImageProcess:
                             [0, 0, 0, 1, 0, 0, 0],
                             [0, 0, 0, 1, 0, 0, 0],
                             [0, 0, 0, 1, 0, 0, 0]], dtype=np.float32)
-        kernel = cv2.resize(kernel, (21, 21), interpolation=cv2.INTER_AREA)  
+        kernel = cv2.resize(kernel, (31, 31), interpolation=cv2.INTER_AREA)  
         kernel = cv2.GaussianBlur(kernel, ksize=(3, 3), sigmaX=0, borderType = cv2.BORDER_REPLICATE) 
         left = kernel / np.sum(kernel)  # 正規化
         #left = np.ones(grayImage.shape, np.uint8)*255
@@ -267,7 +203,7 @@ class ImageProcess:
                             [0, 0, 0, 1, 0, 0, 0],
                             [0, 0, 0, 1, 0, 0, 0],
                             [0, 0, 0, 1, 0, 0, 0]], dtype=np.float32)
-        kernel = cv2.resize(kernel, (21, 21), interpolation=cv2.INTER_AREA)
+        kernel = cv2.resize(kernel, (31, 31), interpolation=cv2.INTER_AREA)
         kernel = cv2.GaussianBlur(kernel, ksize=(3, 3), sigmaX=0, borderType = cv2.BORDER_REPLICATE) 
         right = kernel / np.sum(kernel)  # 正規化
         #right = np.ones(grayImage.shape, np.uint8)*255
@@ -279,7 +215,7 @@ class ImageProcess:
                             [0, 0, 0, 1, 0, 0, 0],
                             [0, 0, 0, 1, 0, 0, 0],
                             [0, 0, 0, 1, 0, 0, 0]], dtype=np.float32)
-        kernel = cv2.resize(kernel, (21, 21), interpolation=cv2.INTER_AREA)
+        kernel = cv2.resize(kernel, (31, 31), interpolation=cv2.INTER_AREA)
         kernel = cv2.GaussianBlur(kernel, ksize=(3, 3), sigmaX=0, borderType = cv2.BORDER_REPLICATE) 
         top = kernel / np.sum(kernel)  # 正規化
         # 下
@@ -290,11 +226,17 @@ class ImageProcess:
                             [0, 0, 0, 0, 0, 0, 0],
                             [0, 0, 0, 0, 0, 0, 0],
                             [0, 0, 0, 0, 0, 0, 0]], dtype=np.float32)
-        kernel = cv2.resize(kernel, (21, 21), interpolation=cv2.INTER_AREA)
+        kernel = cv2.resize(kernel, (31, 31), interpolation=cv2.INTER_AREA)
         kernel = cv2.GaussianBlur(kernel, ksize=(3, 3), sigmaX=0, borderType = cv2.BORDER_REPLICATE) 
         bottom = kernel / np.sum(kernel)  # 正規化
+        templates = [center, left_top, right_top, left_bottom, right_bottom, left, right, top, bottom]
+        
+        cross_points = np.zeros((10, 10, 2), dtype=np.int32)
+        cross_points_candidate = [[[] for _ in range(10)] for _ in range(10)]
+        grays = np.empty((10, 10, 64, 64), dtype=np.uint8)
+        results = np.empty((10, 10, 34, 34), dtype=np.float32)
+        candidates_img = np.empty((10, 10, 34, 34, 3), dtype=np.uint8)    
 
-        cross_points = np.empty((10, 10, 2), dtype=np.int32)
         # テンプレートマッチングで十字の中心点を検出
         for j in range(10):
             for i in range(10):
@@ -319,13 +261,74 @@ class ImageProcess:
                     template = bottom
                 # テンプレートマッチング
                 result = cv2.matchTemplate(gray_blurred[y:y+64, x:x+64].astype(np.float32), template, cv2.TM_CCOEFF_NORMED)
-                # 最大値の位置を取得
-                min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(result)       
-                # 十字の中心点を更新
-                offset_x = template.shape[1] // 2
-                offset_y = template.shape[0] // 2
-                cross_points[i, j] = (max_loc[0] + x + offset_x, max_loc[1] + y + offset_y)
-        return cross_points
+                center_x = result.shape[1] // 2
+                center_y = result.shape[0] // 2                
+                neighbor = np.zeros(result.shape, dtype=np.int32)
+                threshold = np.max(result) * 0.8  # スコアの閾値
+                # 閾値以上の候補を抽出
+                locations = np.where(result >= threshold)
+                # 座標とスコアをタプルで保持
+                matches = [(pt[1], pt[0], result[pt[0], pt[1]]) for pt in zip(*locations)]
+                # スコアでソート（高い順）
+                sorted_matches = sorted(matches, key=lambda x: x[2], reverse=True)
+                print(sorted_matches[:10])  # 上位10件を表示
+                # スコアの高い順に処理
+                # 極大値だけを候補とする　5x5の領域をマークして極大値でないものを除外
+                for x, y, score in sorted_matches:
+                    if neighbor[y, x] == 0:
+                        cross_points_candidate[i][j].append((x, y, score))
+                    ys = y - 2
+                    if ys < 0:
+                        ys = 0
+                    xs = x - 2
+                    if xs < 0:
+                        xs = 0
+                    ye = y + 2
+                    if ye >= result.shape[0]:
+                        ye = result.shape[0] - 1
+                    xe = x + 2
+                    if xe >= result.shape[1]:
+                        xe = result.shape[1] - 1
+                    neighbor[ys:ye + 1, xs:xe + 1] = 1  # 5x5の領域をマーク
+                print(f"グリッド({i}, {j})の候補数: {len(cross_points_candidate[i][j])}")
+                print(cross_points_candidate[i][j])
+                candidates_img[i,j] = cv2.cvtColor(result.astype(np.uint8), cv2.COLOR_GRAY2BGR)
+                for c in cross_points_candidate[i][j]:
+                    cv2.circle(candidates_img[i,j], (c[0], c[1]), 3, (0, 255, 0), -1)
+                results[i, j] = result
+                grays[i, j] = gray_blurred[j * 64: j * 64 + 64, i * 64: i * 64 + 64]
+
+        # AdjustmentOrderに従ってcross_pointsを調整する
+        AdjustmentOrder = np.array([4, 5, 3, 6, 2, 7, 1, 8, 0, 9])  # 調整順序        
+        AdjustmentTimes = 5  # 調整回数
+        for k in range(AdjustmentTimes): 
+            for j in AdjustmentOrder:
+                for i in AdjustmentOrder:
+                    # 上下左右の点を取得
+                    left  = cross_points[i - 1, j] if i > 0 else np.array([0, 0])
+                    right = cross_points[i + 1, j] if i < 9 else np.array([0, 0])
+                    up    = cross_points[i, j - 1] if j > 0 else np.array([0, 0])
+                    down  = cross_points[i, j + 1] if j < 9 else np.array([0, 0])
+                    # 平均をとる
+                    mean_point = np.mean([up, down, left, right], axis=0)
+                    line_lens = [np.linalg.norm(np.array([c[0] - center_x - mean_point[0], c[1] - center_y - mean_point[1]])) for c in cross_points_candidate[i][j]]
+                    min_index = line_lens.index(min(line_lens))
+                    cross_points[i, j] = tuple(x + y for x, y in zip((-center_x, -center_y), cross_points_candidate[i][j][min_index][:2])) 
+                    if k == AdjustmentTimes - 1:  # 最後の調整であれば、中心点を青くする
+                        cv2.circle(candidates_img[i,j],                       
+                                (cross_points[i, j][0] + center_x, cross_points[i, j][1] + center_y),
+                                5, (255, 0, 0), 2)
+                    else:  # 調整中は赤くする
+                        cv2.circle(candidates_img[i,j],                      
+                                (cross_points[i, j][0] + center_x, cross_points[i, j][1] + center_y),
+                                5, (0, 0, 255), 2)
+
+        # 十字の中心点をマージンを加えて配置
+        for j in range(10):
+            for i in range(10):
+                cross_points[i, j] += np.array([i * 64 + 32, j * 64 + 32])  # マージンを加える
+         
+        return cross_points, grays, results, candidates_img, templates
 
     def getGridImages(self, cross_points, rect):    
         # 十字の中心点を元の画像に変換
