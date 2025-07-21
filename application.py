@@ -54,6 +54,11 @@ class ProcessSettings:
         self.param_dict['file_name'] = filename
         base64_img = request.form['image']
         #print(type(base64_png))
+        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        if not base64_img.startswith('data:image/jpeg;base64,'):
+            print("Invalid base64 image format")
+            return
+        print("type & size of base64_img:"+str(type(base64_img))+", "+str(sys.getsizeof(base64_img)))
         code = base64.b64decode(base64_img.split(',')[1])  # remove header 
         image_decoded = Image.open(BytesIO(code))
         image_decoded.save(filename)
@@ -61,7 +66,7 @@ class ProcessSettings:
     def upload(self, request):
         start_time = time.perf_counter()
         f = request.files.get('file')
-        print(vars(f))
+        print("file variables:"+vars(f))
         filename = self.get_work_filename()
         f.save(filename)
         self.param_dict['file_name'] = filename
@@ -160,7 +165,7 @@ def send():
 def result():
     result_file_name = p_settings.process()
     ext_without_period = os.path.splitext(result_file_name)[1][1:]
-    print(ext_without_period)
+    print("extension:"+ext_without_period)
     if ext_without_period == 'png':
         return render_template('result.html', result_url = result_file_name)
     elif ext_without_period == 'pdf':
