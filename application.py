@@ -50,11 +50,11 @@ class ProcessSettings:
         return self.param_dict['process'] 
 
     def save_capture_image(self):
-        filename = self.get_work_filename() + '.png'
+        filename = self.get_work_filename() + '.jpg'
         self.param_dict['file_name'] = filename
-        base64_png = request.form['image']
+        base64_img = request.form['image']
         #print(type(base64_png))
-        code = base64.b64decode(base64_png.split(',')[1])  # remove header 
+        code = base64.b64decode(base64_img.split(',')[1])  # remove header 
         image_decoded = Image.open(BytesIO(code))
         image_decoded.save(filename)
 

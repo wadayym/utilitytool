@@ -54,8 +54,9 @@
 		}
 		img.onload = function(){			
 			context.drawImage(img, 0, 0, canvas.width, canvas.height);
-			const base64_png = canvas.toDataURL("image/png");
-			request.value = base64_png;
+			//const base64_png = canvas.toDataURL("image/png");
+			const base64_img = canvas.toDataURL("image/jpeg");
+			request.value = base64_img;
 			form.appendChild(request);
 			document.body.appendChild(form);
 			form.submit();
