@@ -110,8 +110,8 @@ class ImageProcess:
     def transformedImage(self, rect):
         # 元画像を正規化する
         grid_size, margin, grid_pnts = self.getGridPoints() # グリッドマトリックス
-        print("rect type:", rect.dtype)
-        print("grid_pnts type:", grid_pnts.dtype)
+        #print("rect type:", rect.dtype)
+        #print("grid_pnts type:", grid_pnts.dtype)
         transform = cv2.getPerspectiveTransform(rect, grid_pnts)
         gray_transformed = cv2.warpPerspective(self.gray, transform, (grid_size + margin * 2, grid_size + margin * 2))
         gray_reverted = cv2.bitwise_not(gray_transformed)
@@ -271,7 +271,7 @@ class ImageProcess:
                 matches = [(pt[1], pt[0], result[pt[0], pt[1]]) for pt in zip(*locations)]
                 # スコアでソート（高い順）
                 sorted_matches = sorted(matches, key=lambda x: x[2], reverse=True)
-                print(sorted_matches[:10])  # 上位10件を表示
+                #print(sorted_matches[:10])  # 上位10件を表示
                 # スコアの高い順に処理
                 # 極大値だけを候補とする　5x5の領域をマークして極大値でないものを除外
                 for x, y, score in sorted_matches:
@@ -290,8 +290,8 @@ class ImageProcess:
                     if xe >= result.shape[1]:
                         xe = result.shape[1] - 1
                     neighbor[ys:ye + 1, xs:xe + 1] = 1  # 5x5の領域をマーク
-                print(f"グリッド({i}, {j})の候補数: {len(cross_points_candidate[i][j])}")
-                print(cross_points_candidate[i][j])
+                #print(f"グリッド({i}, {j})の候補数: {len(cross_points_candidate[i][j])}")
+                #print(cross_points_candidate[i][j])
                 candidates_img[i,j] = cv2.cvtColor(result.astype(np.uint8), cv2.COLOR_GRAY2BGR)
                 for c in cross_points_candidate[i][j]:
                     cv2.circle(candidates_img[i,j], (c[0], c[1]), 3, (0, 255, 0), -1)

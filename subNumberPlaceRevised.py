@@ -36,7 +36,7 @@ class NumberPlace:
             self.order_table[k][0] = max_i
             self.order_table[k][1] = max_j
             self.work_table[max_i][max_j] = 1  # Mark as processed
-        print("order_table:", self.order_table)
+        #print("order_table:", self.order_table)
 
     def count3(self, i, j):
         return self.count_box(i, j) + self.count_row(i, j) + self.count_column(i, j)
