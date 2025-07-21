@@ -53,8 +53,20 @@
 			}
 		}
 		img.onload = function(){			
+			// 元画像サイズ
+			const imgWidth = img.width;
+			const imgHeight = img.height;
+			const maxLen = Math.max(imgWidth, imgHeight);
+
+			// 長辺が800を超えないようにcanvasサイズを調整
+			let scale = 1;
+			if (maxLen > 800) {
+				scale = 800 / maxLen;
+			}
+			canvas.width = Math.round(imgWidth * scale);
+			canvas.height = Math.round(imgHeight * scale);
+
 			context.drawImage(img, 0, 0, canvas.width, canvas.height);
-			//const base64_png = canvas.toDataURL("image/png");
 			const base64_img = canvas.toDataURL("image/jpeg");
 			request.value = base64_img;
 			form.appendChild(request);
