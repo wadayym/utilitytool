@@ -6,13 +6,21 @@ name: Build and deploy Python app to Azure Web App - wadayym
 
 on:
   workflow_dispatch:
+    inputs:
+      target_branch:
+        description: 'Deploy from which branch?'
+        required: true
+        default: 'main'
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout selected branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.target_branch }}
 
       - name: Set up Python version
         uses: actions/setup-python@v4
