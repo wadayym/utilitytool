@@ -5,12 +5,10 @@ import uuid
 import datetime
 import glob
 import base64
-from PIL import Image
+import numpy as np
+import cv2
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory
 from flask_dropzone import Dropzone
-from werkzeug.utils import secure_filename
-from pathlib import Path
-from io import BytesIO
 from PdfProcessing import pdf_roll, pdf2text, pdfvertical2text
 from subNumberPlaceRevised import NumberPlace
 from OCRProcessingRevised import find_square
@@ -60,8 +58,9 @@ class ProcessSettings:
             return
         print("type & size of base64_img:"+str(type(base64_img))+", "+str(sys.getsizeof(base64_img)))
         code = base64.b64decode(base64_img.split(',')[1])  # remove header 
-        image_decoded = Image.open(BytesIO(code))
-        image_decoded.save(filename)
+        nparr = np.frombuffer(code, np.uint8)
+        image_decoded = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        cv2.imwrite(filename, image_decoded)
 
     def upload(self, request):
         start_time = time.perf_counter()

@@ -1,7 +1,5 @@
-Pillow
 Flask==2.3.3
 flask_dropzone
-Werkzeug
 numpy
 PyPDF2
 pdfminer.six
