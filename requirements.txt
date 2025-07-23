@@ -2,7 +2,9 @@ Flask==2.3.3
 flask_dropzone
 Werkzeug
 numpy
+Pillow
 PyPDF2
+pdfminer.six
 pdfminer.six
 opencv-python-headless
 onnxruntime
