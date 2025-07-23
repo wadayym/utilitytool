@@ -25,7 +25,7 @@ jobs:
       - name: Set up Python version
         uses: actions/setup-python@v4
         with:
-          python-version: '3.12'
+          python-version: '3.13'
 
       - name: Create and start virtual environment
         run: |
@@ -63,6 +63,6 @@ jobs:
         id: deploy-to-webapp
         uses: azure/webapps-deploy@0b651ed7546ecfc75024011f76944cb9b381ef1e
         with:
-          app-name: 'wadayym'
+          app-name: 'utilitytool-wadayym'
           slot-name: 'Production'
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}

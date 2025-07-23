@@ -47,6 +47,7 @@ jobs:
         package: .
 ```
 4. Azure の発行プロファイルを GitHub に登録
+- Azure Portal → App Service → 設定 → 構成 → SCM 基本認証の発行資格情報 ON
 - Azure Portal → App Service → 「発行プロファイルを取得」
 → GitHub のリポジトリに AZURE_WEBAPP_PUBLISH_PROFILE という名前で Secrets に登録
 5. デプロイ確認
