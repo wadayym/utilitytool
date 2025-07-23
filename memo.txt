@@ -2,3 +2,5 @@ np2-np7の縦長の画像が、上下に圧縮されて横長に表示される�
 np4で次のエラーとなる。
 Request Entity Too Large
 The data value transmitted exceeds the capacity limit.
+以上修正済み
+
