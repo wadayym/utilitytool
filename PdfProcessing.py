@@ -9,8 +9,8 @@ import re
 
 # PDFを回転する
 def pdf_roll(p_file, p_angle, r_file):
-    file = PyPDF2.PdfFileReader(open(p_file, 'rb'))
-    file_output = PyPDF2.PdfFileWriter()
+    file = PyPDF2.PdfReader(open(p_file, 'rb'))
+    file_output = PyPDF2.PdfWriter()
     for page_num in range(file.numPages):
         page = file.getPage(page_num)
         page.rotateClockwise(p_angle)
