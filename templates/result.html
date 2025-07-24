@@ -5,19 +5,43 @@
     <meta http-equiv="Pragma" content="no-store">
     <meta http-equiv="Cache-Control" content="no-store">
     <meta http-equiv="Expires" content="0">
-
     <title>画像処理結果</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      body {
+        margin: 0;
+        padding: 10px;
+        font-family: sans-serif;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 10px;
+      }
+      img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+        border: 1px solid #ccc;
+        background: #fafafa;
+      }
+      @media (max-width: 600px) {
+        .container {
+          max-width: 100%;
+          padding: 5px;
+        }
+      }
+    </style>
 </head>
 
 <body>
-
   <div class="container">
     <div class="row">
       {% if result_url %}
-      <p><img src="{{ result_url }}" height="800"></p>
+      <p><img src="{{ result_url }}"></p>
       {% endif %}
     </div>
   </div>
-
 </body>
 </html>

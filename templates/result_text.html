@@ -5,14 +5,46 @@
     <meta http-equiv="Pragma" content="no-store">
     <meta http-equiv="Cache-Control" content="no-store">
     <meta http-equiv="Expires" content="0">
-
     <title>処理結果テキスト</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      body {
+        margin: 0;
+        padding: 10px;
+        font-family: "MS Gothic", sans-serif;
+        background: #101820;
+        color: #f5eaea;
+      }
+      .iframe-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 10px;
+      }
+      iframe {
+        width: 100%;
+        min-height: 300px;
+        border: none;
+        background: #181818;
+        color: #f5eaea;
+        display: block;
+      }
+      @media (max-width: 600px) {
+        .iframe-container {
+          max-width: 100%;
+          padding: 5px;
+        }
+        iframe {
+          min-height: 200px;
+        }
+      }
+    </style>
 </head>
-
 <body>
-  {% if result_url %}
-  <iframe src="{{ result_url }}"  TYPE="text/plain" WIDTH="100%" scrolling="no" onload="resizeIframe(this)"></iframe>
-  {% endif %}
+  <div class="iframe-container">
+    {% if result_url %}
+    <iframe src="{{ result_url }}" TYPE="text/plain" scrolling="no" onload="resizeIframe(this)"></iframe>
+    {% endif %}
+  </div>
   <script>
     function resizeIframe(obj) {
       var frmdoc = obj.contentDocument || obj.contentWindow.document;
@@ -21,8 +53,8 @@
       frmdoc.body.style.lineHeight = '1.75';
       frmdoc.body.style.letterSpacing = '1.5px';
       frmdoc.body.style.fontWeight = 'normal';
-      frmdoc.body.style.color = 'rgb( 95%, 90%, 90% )';
-      frmdoc.body.style.backgroundColor = 'rgb( 5%, 10%, 10% )';
+      frmdoc.body.style.color = '#f5eaea';
+      frmdoc.body.style.backgroundColor = '#101820';
       obj.style.height = obj.contentWindow.document.documentElement.scrollHeight + 'px';
     }
   </script>
