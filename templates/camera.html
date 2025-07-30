@@ -72,6 +72,17 @@
 				// PC向け処理
 			}
 		}
+		else if (/Mobile|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+			label.textContent = 'スマホのカメラで撮影してください📱';
+			console.log("Mobile device detected (userAgent)");
+			// スマホ向け処理
+		} else {
+			label.textContent = 'PCから画像ファイルを選択してください💻';
+			console.log("Desktop device detected (userAgent)");
+			// PC向け処理
+		}
+
+
 
 		var form = document.createElement('form');
 		var request = document.createElement('input');
