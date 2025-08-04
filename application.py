@@ -4,13 +4,10 @@ import time
 import uuid
 import datetime
 import glob
-import base64
-import numpy as np
-import cv2
+
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory
 from flask_dropzone import Dropzone
 from PdfProcessing import pdf_roll, pdf2text, pdfvertical2text
-from subNumberPlaceRevised import NumberPlace
 from OCRProcessingRevised import find_square
 
 print(sys.version)
@@ -39,28 +36,9 @@ class ProcessSettings:
             self.param_dict['p1'] = request.form['p1']
         elif self.param_dict['process'] == "PDFテキスト化":
             self.param_dict['p1'] = request.form['p1']
-        elif self.param_dict['process'] == "NumberPlace":
-            pass
-        elif self.param_dict['process'] == "カメラ表示":
-            pass
     
     def get_process_name(self):
         return self.param_dict['process'] 
-
-    def save_capture_image(self):
-        filename = self.get_work_filename() + '.jpg'
-        self.param_dict['file_name'] = filename
-        base64_img = request.form['image']
-        #print(type(base64_png))
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        if not base64_img.startswith('data:image/jpeg;base64,'):
-            print("Invalid base64 image format")
-            return
-        print("type & size of base64_img:"+str(type(base64_img))+", "+str(sys.getsizeof(base64_img)))
-        code = base64.b64decode(base64_img.split(',')[1])  # remove header 
-        nparr = np.frombuffer(code, np.uint8)
-        image_decoded = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-        cv2.imwrite(filename, image_decoded)
 
     def upload(self, request):
         start_time = time.perf_counter()
@@ -93,11 +71,6 @@ class ProcessSettings:
                 pdf2text(self.param_dict['file_name'], filename_result)
             if self.param_dict['p1'] == "縦書き":
                 pdfvertical2text(self.param_dict['file_name'], filename_result)
-        
-        elif self.param_dict['process'] == "カメラ表示":
-            filename_result += '.png'
-            # ここで処理する
-            find_square(self.param_dict['file_name'],filename_result)
 
         current_time = time.perf_counter()
         print(self.param_dict['process']+" processing time = {:.3f}sec".format(current_time - start_time))
@@ -113,24 +86,13 @@ class ProcessSettings:
 
 p_settings = ProcessSettings()
 
-PlaceName = [['00'] * 9 for i in range(9)]
-for i in range(9):
-    for j in range(9):
-        PlaceName[i][j] = str(i * 10 + j)
-bComplete = False
-
 @app.route('/', methods=['POST', 'GET'])
 def index():
     ac = request.endpoint
     print("endpoint:"+ac)
     if request.method == 'POST': 
         p_settings.set(request)
-        if p_settings.get_process_name() =='NumberPlace':
-            return redirect('/numberplace')
-
-        if p_settings.get_process_name() == "カメラ表示":
-            return render_template('camera.html')
-
+        print("process:"+p_settings.get_process_name())
         return redirect('/upload') 
         
     return render_template('index.html')
@@ -140,25 +102,6 @@ def upload():
     if request.method == 'POST':
         p_settings.upload(request)
     return render_template('upload.html', pocess_name = p_settings.get_process_name())
-
-@app.route('/numberplace', methods=['POST', 'GET'])
-def numberplace():
-    bComplete = False
-    return render_template('numberplace.html', PlaceName = PlaceName, bComplete = bComplete)
-
-@app.route('/resolve', methods=['GET', 'POST'])
-def send():
-    if request.method == 'POST':
-        numberPlace = NumberPlace()
-        for i in range(9):
-            for j in range(9):
-                numberPlace.set(i, j, int(request.form[PlaceName[i][j]]))
-        numberPlace.check_all()
-        outTable, inTable = numberPlace.get()
-        bComplete = True
-        return render_template('numberplace.html', PlaceName = PlaceName, IN_Table = inTable, NP_Table = outTable, bComplete = bComplete)
-    else:
-        return redirect(url_for('numberplace'))
 
 @app.route('/result')
 def result():
@@ -175,13 +118,6 @@ def result():
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOADED_PATH'], filename)
-
-@app.route("/camera", methods=['POST', 'GET'])
-def capture():
-    if request.method == 'POST':
-        p_settings.save_capture_image()
-        return redirect('/result')
-    return render_template('camera.html')
 
 if __name__ == '__main__':
     for p in glob.glob(app.config['UPLOADED_PATH']+'/**', recursive=True):
