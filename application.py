@@ -8,7 +8,6 @@ import glob
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory
 from flask_dropzone import Dropzone
 from PdfProcessing import pdf_roll, pdf2text, pdfvertical2text
-from OCRProcessingRevised import find_square
 
 print(sys.version)
 app = Flask(__name__)
@@ -43,7 +42,8 @@ class ProcessSettings:
     def upload(self, request):
         start_time = time.perf_counter()
         f = request.files.get('file')
-        print("file variables:"+vars(f))
+        print("file name:"+f.filename)
+        print(vars(f))
         filename = self.get_work_filename()
         f.save(filename)
         self.param_dict['file_name'] = filename
