@@ -13,7 +13,7 @@ def pdf_roll(p_file, p_angle, r_file):
     file_output = PyPDF2.PdfWriter()
     for page_num in range(len(file_input.pages)):
         page = file_input.pages[page_num]
-        page.rotateClockwise(p_angle)
+        page.rotate(p_angle)
         file_output.addPage(page)
     with open(r_file, 'wb') as f:
         file_output.write(f)
