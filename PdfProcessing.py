@@ -14,7 +14,7 @@ def pdf_roll(p_file, p_angle, r_file):
     for page_num in range(len(file_input.pages)):
         page = file_input.pages[page_num]
         page.rotate(p_angle)
-        file_output.addPage(page)
+        file_output.add_page(page)
     with open(r_file, 'wb') as f:
         file_output.write(f)
 
