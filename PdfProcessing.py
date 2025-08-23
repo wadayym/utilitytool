@@ -1,4 +1,3 @@
-import PyPDF2
 from pdfminer.high_level import extract_text
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
 from pdfminer.converter import TextConverter
@@ -6,11 +5,12 @@ from pdfminer.layout import LAParams
 from pdfminer.pdfpage import PDFPage
 from io import StringIO
 import re
+import pypdf
 
 # PDFを回転する
 def pdf_roll(p_file, p_angle, r_file):
-    file_input = PyPDF2.PdfReader(open(p_file, 'rb'))
-    file_output = PyPDF2.PdfWriter()
+    file_input = pypdf.PdfReader(open(p_file, 'rb'))
+    file_output = pypdf.PdfWriter()
     for page_num in range(len(file_input.pages)):
         page = file_input.pages[page_num]
         page.rotate(p_angle)

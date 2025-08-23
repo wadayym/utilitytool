@@ -1,8 +1,8 @@
 Flask==2.3.3
 flask_dropzone
 numpy
-PyPDF2
 pdfminer.six
 pdfminer.six
 opencv-python-headless
 onnxruntime
+pypdf
